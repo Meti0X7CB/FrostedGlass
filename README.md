@@ -42,4 +42,4 @@ You can also download the .zip file to if you want to bundle the plugin in your 
 
 ## Note
 This project is the work of [TheAzack9](https://github.com/TheAzack9) with the modification for Win 11 style support added by [khanhas](https://github.com/khanhas).
-I've only compile the project and packaged the plugin for public use.
+I've only compiled the project and packaged the plugin for public use.
