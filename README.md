@@ -31,6 +31,8 @@ Valid options for `Corner` are:
 - Windows 10 or higher
 - Rainmeter 4.5.17.3700 or higher
 
+Note: You will need Windows 11 for the rounded corner style to work!
+
 ## Installation
 
 Download the latest version from [Releases](https://github.com/Meti0X7CB/FrostedGlass/releases) tab.
