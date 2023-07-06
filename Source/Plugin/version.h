@@ -1,5 +1,5 @@
 #define PLUGIN_VERSION "1.1.3"
-#define PLUGIN_AUTHOR "theAzack9"
+#define PLUGIN_AUTHOR "TheAzack9, khanhas, Meti0X7CB"
 #define PLUGIN_YEAR 2023
 // Has to be the same as the project name!
 #define PLUGIN_NAME "FrostedGlass"
