@@ -11,12 +11,12 @@ Windows 11 rounded corner style is now supported thanks to [khanhas](https://git
 https://github.com/Meti0X7CB/FrostedGlass/assets/8690114/6640e145-b0e9-438f-9524-70a3def66577
 
 An example of the plugin in use: 
-```
+```ini
 [FrostedGlass]
-Measure=Plugin
-Plugin=FrostedGlass
-Type=Acrylic
-Corner=Round
+Measure = Plugin
+Plugin = FrostedGlass
+Type = Acrylic
+Corner = Round
 ```
 Valid options for `Type` are:
 
