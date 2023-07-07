@@ -24,7 +24,7 @@ Valid options for `Type` are:
 
 Valid options for `Corner` are:
 
-`Round`, `RoundSmall`
+`Round`, `RoundSmall`, `None`
 
 ## Minimum Requirements:
 
