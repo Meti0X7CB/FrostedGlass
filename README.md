@@ -51,6 +51,17 @@ Valid options for `BorderVisible` are:
 
 `0`, `1`
 <br><br>
+## Commands
+
+General Plugin:
+- `ToggleBlur`, `EnableBlur`, `DisableBlur`
+  
+Backdrop:
+- `ToggleBackdrop`, `EnableBackdrop`, `DisableBackdrop`
+
+BorderVisible:
+- `ToggleBorders`, `EnableBorders`, `DisableBorders`
+<br><br>
 ## Minimum Requirements:
 
 - Windows 10 or higher
