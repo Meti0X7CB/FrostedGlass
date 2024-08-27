@@ -80,10 +80,10 @@ Valid options for `Backdrop` are:
 ![Rainmeter_37Rs3vAgmJ](https://github.com/user-attachments/assets/db2d7a31-b94e-44b4-9184-2fecb2f906cd)
 ## Light5
 ![Rainmeter_5Sjp7hn0Oh](https://github.com/user-attachments/assets/ffe6bd8c-02b6-4369-a307-4dc3b42fb11c)
-
 </details>
 
-<br><br>
+<br>
+
 ## BorderVisible
 
 Valid options for `BorderVisible` are:
