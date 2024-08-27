@@ -4,6 +4,14 @@ A Rainmeter plugin that allows you to easily create blur effect on the skin wind
 
 Windows 11 rounded corner style is now supported thanks to [khanhas](https://github.com/khanhas).
 
+## Old version.
+
+![OyT05WQgKi](https://github.com/user-attachments/assets/489cbb39-68d5-4b30-b009-a59754c79382)
+
+## New Version + Light Backdrop + Not visible Border.
+
+![euOemFe9sx](https://github.com/user-attachments/assets/52e718dd-22b1-44da-b73f-b8239bc23907)
+
 ## Functionality
 
 An example of the plugin in use: 
