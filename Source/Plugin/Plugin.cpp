@@ -31,7 +31,15 @@ enum AccentFlags
 enum AccentDrop
 {
 	DARK = 0x00000000,
-	LIGHT = 0x00FFFFFF
+	DARK2 = 0x3F000000,
+	DARK3 = 0x7E000000,
+	DARK4 = 0xBD000000,
+	DARK5 = 0xFF000000,
+	LIGHT = 0x00FFFFFF,
+	LIGHT2 = 0x3FFFFFFF,
+	LIGHT3 = 0x7EFFFFFF,
+	LIGHT4 = 0xBDFFFFFF,
+	LIGHT5 = 0xFFFFFFFF,
 };
 
 enum class AccentState
@@ -161,7 +169,6 @@ struct Measure
 	int prevBorder = 0;
 	AccentDrop prevBackdrop = (AccentDrop)0;
 	int prevBorderVisible = 1;
-	DWM_WINDOW_CORNER_PREFERENCE defaultCorner = DWMWCP_DONOTROUND;
 	DWM_WINDOW_CORNER_PREFERENCE prevCorner = DWMWCP_DONOTROUND;
 	DWM_WINDOW_CORNER_PREFERENCE nextCorner = DWMWCP_DONOTROUND;
 	bool doWarn = true;
@@ -243,7 +250,15 @@ PLUGIN_EXPORT void Reload(void* data, void* rm, double* maxValue)
 	// BackDrop
 	std::wstring backdropTypes = RmReadString(rm, L"Backdrop", L"DARK");
 	AccentDrop backdrop = AccentDrop::DARK;
+	if (_wcsicmp(backdropTypes.c_str(), L"DARK2") == 0) backdrop = AccentDrop::DARK2;
+	if (_wcsicmp(backdropTypes.c_str(), L"DARK3") == 0) backdrop = AccentDrop::DARK3;
+	if (_wcsicmp(backdropTypes.c_str(), L"DARK4") == 0) backdrop = AccentDrop::DARK4;
+	if (_wcsicmp(backdropTypes.c_str(), L"DARK5") == 0) backdrop = AccentDrop::DARK5;
 	if (_wcsicmp(backdropTypes.c_str(), L"LIGHT") == 0) backdrop = AccentDrop::LIGHT;
+	if (_wcsicmp(backdropTypes.c_str(), L"LIGHT2") == 0) backdrop = AccentDrop::LIGHT2;
+	if (_wcsicmp(backdropTypes.c_str(), L"LIGHT3") == 0) backdrop = AccentDrop::LIGHT3;
+	if (_wcsicmp(backdropTypes.c_str(), L"LIGHT4") == 0) backdrop = AccentDrop::LIGHT4;
+	if (_wcsicmp(backdropTypes.c_str(), L"LIGHT5") == 0) backdrop = AccentDrop::LIGHT5;
 
 	// Border Visible
 	std::wstring BorderVisibleTypes = RmReadString(rm, L"BorderVisible", L"1");
@@ -312,7 +327,6 @@ PLUGIN_EXPORT void ExecuteBang(void* data, LPCWSTR args)
 			{
 				SetWindowAttribute(m->skin, DWMWA_BORDER_COLOR, &rgbNull, sizeof rgbNull);
 				m->prevBorderVisible = 0;
-
 			}
 			else
 			{
@@ -332,64 +346,91 @@ PLUGIN_EXPORT void ExecuteBang(void* data, LPCWSTR args)
 		}
 		else if (compare(sargs, L"TOGGLEBACKDROP"))
 		{
-			failed = SetSkinAccent(m->skin, m->prevBorder, m->prevState, m->prevBackdrop == AccentDrop::DARK ? AccentDrop::LIGHT : AccentDrop::DARK);
-			m->prevBackdrop = m->prevBackdrop == AccentDrop::DARK ? AccentDrop::LIGHT : AccentDrop::DARK;
+			if (m->prevBackdrop == AccentDrop::DARK || m->prevBackdrop == AccentDrop::LIGHT) m->prevBackdrop = m->prevBackdrop == AccentDrop::DARK ? AccentDrop::LIGHT : AccentDrop::DARK;
+			else if (m->prevBackdrop == AccentDrop::DARK2 || m->prevBackdrop == AccentDrop::LIGHT2) m->prevBackdrop = m->prevBackdrop == AccentDrop::DARK2 ? AccentDrop::LIGHT2 : AccentDrop::DARK2;
+			else if (m->prevBackdrop == AccentDrop::DARK3 || m->prevBackdrop == AccentDrop::LIGHT3) m->prevBackdrop = m->prevBackdrop == AccentDrop::DARK3 ? AccentDrop::LIGHT3 : AccentDrop::DARK3;
+			else if (m->prevBackdrop == AccentDrop::DARK4 || m->prevBackdrop == AccentDrop::LIGHT4) m->prevBackdrop = m->prevBackdrop == AccentDrop::DARK4 ? AccentDrop::LIGHT4 : AccentDrop::DARK4;
+			else if (m->prevBackdrop == AccentDrop::DARK5 || m->prevBackdrop == AccentDrop::LIGHT5) m->prevBackdrop = m->prevBackdrop == AccentDrop::DARK5 ? AccentDrop::LIGHT5 : AccentDrop::DARK2;
+			failed = SetSkinAccent(m->skin, m->prevBorder, m->prevState, m->prevBackdrop);
 		}
 		else if (compare(sargs, L"LIGHTBACKDROP"))
 		{
-			failed = SetSkinAccent(m->skin, m->prevBorder, m->prevState, AccentDrop::LIGHT);
-			m->prevBackdrop = AccentDrop::LIGHT;
+			if (m->prevBackdrop == AccentDrop::DARK) m->prevBackdrop = AccentDrop::LIGHT;
+			else if (m->prevBackdrop == AccentDrop::DARK2) m->prevBackdrop = AccentDrop::LIGHT2;
+			else if (m->prevBackdrop == AccentDrop::DARK3) m->prevBackdrop = AccentDrop::LIGHT3;
+			else if (m->prevBackdrop == AccentDrop::DARK4) m->prevBackdrop = AccentDrop::LIGHT4;
+			else if (m->prevBackdrop == AccentDrop::DARK5) m->prevBackdrop = AccentDrop::LIGHT5;
+			failed = SetSkinAccent(m->skin, m->prevBorder, m->prevState, m->prevBackdrop);
 		}
 		else if (compare(sargs, L"DARKBACKDROP"))
 		{
-			failed = SetSkinAccent(m->skin, m->prevBorder, m->prevState, AccentDrop::DARK);
-			m->prevBackdrop = AccentDrop::DARK;
+			if (m->prevBackdrop == AccentDrop::LIGHT) m->prevBackdrop = AccentDrop::DARK;
+			else if (m->prevBackdrop == AccentDrop::LIGHT2) m->prevBackdrop = AccentDrop::DARK2;
+			else if (m->prevBackdrop == AccentDrop::LIGHT3) m->prevBackdrop = AccentDrop::DARK3;
+			else if (m->prevBackdrop == AccentDrop::LIGHT4) m->prevBackdrop = AccentDrop::DARK4;
+			else if (m->prevBackdrop == AccentDrop::LIGHT5) m->prevBackdrop = AccentDrop::DARK5;
+			failed = SetSkinAccent(m->skin, m->prevBorder, m->prevState, m->prevBackdrop);
 		}
-
+		else if (compare(sargs, L"SETCORNER"))
+		{
+			if (compare(sargs, L"2")) m->prevCorner = DWMWCP_ROUNDSMALL;
+			else if (compare(sargs, L"1")) m->prevCorner = DWMWCP_ROUND;
+			else m->prevCorner = DWMWCP_DONOTROUND;
+			SetWindowAttribute(m->skin, DWMWA_WINDOW_CORNER_PREFERENCE, &m->prevCorner, sizeof m->prevCorner);
+		}
+		else if (compare(sargs, L"SETBACKDROP"))
+		{
+			if (compare(sargs, L"LIGHT"))
+			{
+				if (compare(sargs, L"5")) m->prevBackdrop = AccentDrop::LIGHT5;
+				else if (compare(sargs, L"4")) m->prevBackdrop = AccentDrop::LIGHT4;
+				else if (compare(sargs, L"3")) m->prevBackdrop = AccentDrop::LIGHT3;
+				else if (compare(sargs, L"2")) m->prevBackdrop = AccentDrop::LIGHT2;
+				else if (compare(sargs, L"1")) m->prevBackdrop = AccentDrop::LIGHT;
+			}
+			else if (compare(sargs, L"DARK"))
+			{
+				if (compare(sargs, L"5")) m->prevBackdrop = AccentDrop::DARK5;
+				else if (compare(sargs, L"4")) m->prevBackdrop = AccentDrop::DARK4;
+				else if (compare(sargs, L"3")) m->prevBackdrop = AccentDrop::DARK3;
+				else if (compare(sargs, L"2")) m->prevBackdrop = AccentDrop::DARK2;
+				else if (compare(sargs, L"1")) m->prevBackdrop = AccentDrop::DARK;
+			}
+			failed = SetSkinAccent(m->skin, m->prevBorder, m->prevState, m->prevBackdrop);
+		}
 	}
 	
 	if (compare(sargs, L"TOGGLEBLUR"))
 	{
 		if (m->prevState == AccentState::BLURBEHIND) 
 		{
-			failed = SetSkinAccent(m->skin, m->prevBorder, AccentState::DISABLED, m->prevBackdrop);
 			m->prevState = AccentState::DISABLED;
 			m->nextState = AccentState::BLURBEHIND;
 		}
 		else if (m->prevState == AccentState::ACRYLIC)
 		{
-			failed = SetSkinAccent(m->skin, m->prevBorder, AccentState::DISABLED, m->prevBackdrop);
 			m->prevState = AccentState::DISABLED;
 			m->nextState = AccentState::ACRYLIC;
 		}
-		else
-		{
-			failed = SetSkinAccent(m->skin, m->prevBorder, m->nextState , m->prevBackdrop);
-			m->prevState = m->nextState;
-		}
+		else m->prevState = m->nextState;
+		failed = SetSkinAccent(m->skin, m->prevBorder, m->prevState, m->prevBackdrop);
+
 		if (IsWindowsBuildOrGreater(10, 0, 22000)) 
 		{
 			failed = 1;
 			if (m->prevCorner == 3)
 			{
-				SetWindowAttribute(m->skin, DWMWA_WINDOW_CORNER_PREFERENCE, &m->defaultCorner, sizeof m->defaultCorner);
-				m->prevCorner = m->defaultCorner;
+				m->prevCorner = DWMWCP_DONOTROUND;
 				m->nextCorner = DWMWCP_ROUNDSMALL;
 			}
 			else if (m->prevCorner == 2)
 			{
-				SetWindowAttribute(m->skin, DWMWA_WINDOW_CORNER_PREFERENCE, &m->defaultCorner, sizeof m->defaultCorner);
-				m->prevCorner = m->defaultCorner;
+				m->prevCorner = DWMWCP_DONOTROUND;
 				m->nextCorner = DWMWCP_ROUND;
 			}
-			else
-			{
-				SetWindowAttribute(m->skin, DWMWA_WINDOW_CORNER_PREFERENCE, &m->nextCorner, sizeof m->nextCorner);
-				m->prevCorner = m->nextCorner;
-
-			}
+			else m->prevCorner = m->nextCorner;
+			SetWindowAttribute(m->skin, DWMWA_WINDOW_CORNER_PREFERENCE, &m->prevCorner, sizeof m->prevCorner);
 		}
-		
 	} 
 	else if (compare(sargs, L"ENABLEBLUR"))
 	{
@@ -407,36 +448,26 @@ PLUGIN_EXPORT void ExecuteBang(void* data, LPCWSTR args)
 	}
 	else if (compare(sargs, L"DISABLEBLUR"))
 	{
-		if (m->prevState == AccentState::BLURBEHIND)
-		{
-			failed = SetSkinAccent(m->skin, m->prevBorder, AccentState::DISABLED, m->prevBackdrop);
-			m->prevState = AccentState::DISABLED;
-			m->nextState = AccentState::BLURBEHIND;
-		}
-		else if (m->prevState == AccentState::ACRYLIC)
-		{
-			failed = SetSkinAccent(m->skin, m->prevBorder, AccentState::DISABLED, m->prevBackdrop);
-			m->prevState = AccentState::DISABLED;
-			m->nextState = AccentState::ACRYLIC;
-		}
+		if (m->prevState == AccentState::BLURBEHIND) m->nextState = AccentState::BLURBEHIND;
+		else if (m->prevState == AccentState::ACRYLIC) m->nextState = AccentState::ACRYLIC;
+		m->prevState = AccentState::DISABLED;
+		failed = SetSkinAccent(m->skin, m->prevBorder, m->prevState, m->prevBackdrop);
 		if (IsWindowsBuildOrGreater(10, 0, 22000))
 		{
 			failed = 1;
-			if (m->prevCorner == DWMWCP_ROUNDSMALL)
-			{
-				SetWindowAttribute(m->skin, DWMWA_WINDOW_CORNER_PREFERENCE, &m->defaultCorner, sizeof m->defaultCorner);
-				m->prevCorner = m->defaultCorner;
-				m->nextCorner = DWMWCP_ROUNDSMALL;
-			}
-			else if (m->prevCorner == DWMWCP_ROUND)
-			{
-				SetWindowAttribute(m->skin, DWMWA_WINDOW_CORNER_PREFERENCE, &m->defaultCorner, sizeof m->defaultCorner);
-				m->prevCorner = m->defaultCorner;
-				m->nextCorner = DWMWCP_ROUND;
-			}
+			if (m->prevCorner == DWMWCP_ROUNDSMALL) m->nextCorner = DWMWCP_ROUNDSMALL;
+			else if (m->prevCorner == DWMWCP_ROUND) m->nextCorner = DWMWCP_ROUND;
+			m->prevCorner = DWMWCP_DONOTROUND;
+			SetWindowAttribute(m->skin, DWMWA_WINDOW_CORNER_PREFERENCE, &m->prevCorner, sizeof m->prevCorner);
 		}
-		
 	}
+	else if (compare(sargs, L"SETBLUR"))
+	{
+		if (compare(sargs, L"2")) m->prevState = AccentState::ACRYLIC;
+		else if (compare(sargs, L"1")) m->prevState = AccentState::BLURBEHIND;
+		else m->prevState = AccentState::DISABLED;
+		failed = SetSkinAccent(m->skin, m->prevBorder, m->prevState, m->prevBackdrop);
+	}	
 
 	if(!failed)
 	{
