@@ -51,7 +51,38 @@ Valid options for `Corner` are:
 
 Valid options for `Backdrop` are:
 
-`Dark`, `Light`
+<details>
+
+<summary>Dark - Dark5</summary>
+
+## Dark
+ ![Rainmeter_gaYVD99tTR](https://github.com/user-attachments/assets/75772a61-1b90-4e85-a6c7-feb382194ac2)
+## Dark2
+![Rainmeter_QCI16Qv4PK](https://github.com/user-attachments/assets/aec6f2c1-5148-4d35-8918-126f58bdbe83)
+## Dark3
+![Rainmeter_wosNOmKq5m](https://github.com/user-attachments/assets/ab3d87fd-e331-457d-a5b4-8a7c7a573ecd)
+## Dark4
+![Rainmeter_etag4SvTR5](https://github.com/user-attachments/assets/e3937d3e-46b0-46c1-b7ca-d66de0cd2296)
+## Dark5
+![Rainmeter_LAisynEaux](https://github.com/user-attachments/assets/d07e7708-a4c1-46e7-b6b0-e5f735e44300)
+</details>
+<details>
+
+<summary>Light - Light5</summary>
+
+## Light
+![Rainmeter_4rZxfu0Uft](https://github.com/user-attachments/assets/38584a50-b7d4-473f-9004-9642ea80cda2)
+## Light2
+![Rainmeter_V88cVKPh80](https://github.com/user-attachments/assets/28c9ca23-b1b8-4386-88a9-9791b250e85f)
+## Light3
+![Rainmeter_PhyKG2Sdbn](https://github.com/user-attachments/assets/c5d88ef1-37eb-4551-8b6d-2156b869b6bd)
+## Light4
+![Rainmeter_37Rs3vAgmJ](https://github.com/user-attachments/assets/db2d7a31-b94e-44b4-9184-2fecb2f906cd)
+## Light5
+![Rainmeter_5Sjp7hn0Oh](https://github.com/user-attachments/assets/ffe6bd8c-02b6-4369-a307-4dc3b42fb11c)
+
+</details>
+
 <br><br>
 ## BorderVisible
 
@@ -62,10 +93,18 @@ Valid options for `BorderVisible` are:
 ## Commands
 
 General Plugin:
-- `ToggleBlur`, `EnableBlur`, `DisableBlur`
-  
+- `ToggleBlur`, `EnableBlur`, `DisableBlur`,
+- `SetBlur 0` : Set None type or Transparent.
+- `SetBlur 1` : Set Blur type.
+- `SetBlur 2` : Set Acrylic type.
+
+Corner:
+- `SetCorner 0` : Removes any corner.
+- `SetCorner 1` : Set Round Corner.
+- `SetCorner 2` : Set Round Small Corner.
+
 Backdrop:
-- `ToggleBackdrop`, `EnableBackdrop`, `DisableBackdrop`
+- `ToggleBackdrop`, `EnableBackdrop`, `DisableBackdrop`, `SetBackdrop Dark 1`, `SetBackdrop Dark 2`, `SetBackdrop Dark 3`, `SetBackdrop Dark 4`, `SetBackdrop Dark 5`, `SetBackdrop Light 1`,`SetBackdrop Light 2`,`SetBackdrop Light 3`,`SetBackdrop Light 4`,`SetBackdrop Light 5`,
 
 BorderVisible:
 - `ToggleBorders`, `EnableBorders`, `DisableBorders`
