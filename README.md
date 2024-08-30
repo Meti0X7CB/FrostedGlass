@@ -26,7 +26,7 @@ Corner = Round
 ; Backdrop only works with Acrylic.
 Backdrop = Light
 ; VisibleBorder only works with Round/RoundSmall Corner.
-VisibleBorder= 0
+BorderVisible = 0
 ```
 
 ## Type
