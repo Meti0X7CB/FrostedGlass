@@ -93,18 +93,19 @@ Valid options for `BorderVisible` are:
 ## Commands
 
 General Plugin:
-- `ToggleBlur`, `EnableBlur`, `DisableBlur`,
-- `SetBlur 0` : Set None type or Transparent.
+- `ToggleBlur`, `EnableBlur`, `DisableBlur`
 - `SetBlur 1` : Set Blur type.
 - `SetBlur 2` : Set Acrylic type.
 
 Corner:
-- `SetCorner 0` : Removes any corner.
+- `ToggleCorner`, `EnableCorner`, `DisableCorner`
 - `SetCorner 1` : Set Round Corner.
 - `SetCorner 2` : Set Round Small Corner.
 
 Backdrop:
-- `ToggleBackdrop`, `EnableBackdrop`, `DisableBackdrop`, `SetBackdrop Dark 1`, `SetBackdrop Dark 2`, `SetBackdrop Dark 3`, `SetBackdrop Dark 4`, `SetBackdrop Dark 5`, `SetBackdrop Light 1`,`SetBackdrop Light 2`,`SetBackdrop Light 3`,`SetBackdrop Light 4`,`SetBackdrop Light 5`,
+- `ToggleBackdrop`, `EnableBackdrop`, `DisableBackdrop`
+- `SetBackdrop Dark 1`, `SetBackdrop Dark 2`, `SetBackdrop Dark 3`, `SetBackdrop Dark 4`, `SetBackdrop Dark 5`
+- `SetBackdrop Light 1`,`SetBackdrop Light 2`,`SetBackdrop Light 3`,`SetBackdrop Light 4`,`SetBackdrop Light 5`
 
 BorderVisible:
 - `ToggleBorders`, `EnableBorders`, `DisableBorders`
