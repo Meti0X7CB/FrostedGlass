@@ -16,37 +16,69 @@ Windows 11 rounded corner style is now supported thanks to [khanhas](https://git
 
 An example of the plugin in use: 
 ```ini
+
 [FrostedGlass]
-Measure = Plugin
-Plugin = FrostedGlass
-Type = Acrylic
-Border = Left|Right
-; Using Corner option disable Border option.
-Corner = Round
-; Backdrop only works with Acrylic.
-Backdrop = Light
-; VisibleBorder only works with Round/RoundSmall Corner.
-VisibleBorder= 0
+Measure=Plugin
+Plugin=FrostedGlass
+BlurEnabled=1
+; Type = None | Blur | Acrylic | Mica | MicaAcrylic | MicaAlt
+; Acrylic, Mica, MicaAcrylic, MicaAlt only works for Windows 11.
+Type=Acrylic
+; Border = None | Top | Left | Right | Bottom | All
+; Borders are ignored if Mica is enabled.
+Border=Top | Left | Right | Bottom
+; DarkMode = 0 | 1 ; Only Wworks for Windows 11.
+; When using Mica it can does toggle between dark/light mode.
+; When using Round Corner it can does more shadow.
+DarkMode=1
+; Corner = None | Round | RoundSmall ; Only Wworks for Windows 11.
+; Using Corner disable Border option.
+Corner=Round
+; BorderVisible = 0 | 1 ; Only Wworks for Windows 11.
+; Only works if Corner is Round or Roundsmall.
+BorderVisible=1
+; Backdrop = Dark | Dark1... | Dark5 | Light | Light1... | Light5 ; Only Wworks for Windows 11.
+; Only works if Acrylic is enabled.
+Backdrop=Dark
+; MicaOnFocus = 0 | 1 ; Only Wworks for Windows 11.
+; If it's enabled, be sure of the skin can update and measure too.
+; Ex. [Rainmeter] Update=1000 and [FrostedGlass] UpdateDivider = 1.
+MicaOnFocus=0
+; NOTE: Command Measures are useless if the Measure has an update cycle.
+; so if you want use Command Measures, set the UpdateDivider to -1,
+DynamicVariables=1
+UpdateDivider=-1
 ```
 
 ## Type
 
 Valid options for `Type` are:
+- Win 10+ Required > `None`, `Blur`
+- Win 11 Required > `Acrylic`, `Mica`, `MicaAcrylic`, `MicaAlt`
 
-`Blur`, `Acrylic`, `None`
-<br><br>
+## DarkMode
+Valid options for `DarkMode` are:
+`0`, `1`
+
+## MicaOnFocus
+Valid options for `MicaOnFocus` are:
+`0`, `1`
+
 ## Border
 
 Valid options for `Border` are:
-
 `Top`, `Left`, `Right`, `Bottom`, `All`, `None`
-<br><br>
+
 ## Corner
 
 Valid options for `Corner` are:
-
 `Round`, `RoundSmall`, `None`
-<br><br>
+
+## BorderVisible
+
+Valid options for `BorderVisible` are:
+`0`, `1`
+
 ## Backdrop
 
 Valid options for `Backdrop` are:
@@ -84,38 +116,53 @@ Valid options for `Backdrop` are:
 
 <br>
 
-## BorderVisible
-
-Valid options for `BorderVisible` are:
-
-`0`, `1`
-<br><br>
 ## Commands
 
-General Plugin:
+### Windows 10/11 bangs:
+Blur:
 - `ToggleBlur`, `EnableBlur`, `DisableBlur`
-- `SetBlur 1` : Set Blur type.
-- `SetBlur 2` : Set Acrylic type.
+- `SetBlur` : Set Blur type.
+
+### Windows 11 bangs:
+
+DarkMode:
+- `ToggleMode`
+- `LightMode` : Light Mode if Mica is enabled | Reduces shadows for round corner.
+- `DarkMode` : Dark mode if Mica is enabled | Increase the shadow for round corner.
+
+MicaOnFocus:
+- `ToggleFocus`
+- `SetFocus` : Set the focus on the skin if there's not mica effect.
+- `EnableFocus` : Enable the focus detection.
+- `DisableFocus` : Disable the focus detection, mica effect is always enabled.
+
+Blur:
+- `SetBlur Acrylic` : Set Acrylic type.
+- `SetBlur Mica` : Set Mica type. (DarkMode Compability).
+- `SetBlur Mica Acrylic` : Set MicaAcrylic type. (DarkMode Compability).
+- `SetBlur Mica Alt` : Set MicaAlt type. (DarkMode Compability).
 
 Corner:
 - `ToggleCorner`, `EnableCorner`, `DisableCorner`
-- `SetCorner 1` : Set Round Corner.
-- `SetCorner 2` : Set Round Small Corner.
+- `SetCorner Round` : Set Round Corner. (DarkMode Compability).
+- `SetCorner RoundSmall` : Set Round Small Corner.
+
+BorderVisible:
+- `ToggleBorders`, `EnableBorders`, `DisableBorders`
 
 Backdrop:
 - `ToggleBackdrop`, `EnableBackdrop`, `DisableBackdrop`
 - `SetBackdrop Dark 1`, `SetBackdrop Dark 2`, `SetBackdrop Dark 3`, `SetBackdrop Dark 4`, `SetBackdrop Dark 5`
 - `SetBackdrop Light 1`,`SetBackdrop Light 2`,`SetBackdrop Light 3`,`SetBackdrop Light 4`,`SetBackdrop Light 5`
 
-BorderVisible:
-- `ToggleBorders`, `EnableBorders`, `DisableBorders`
-<br><br>
 ## Minimum Requirements:
 
 - Windows 10 or higher
-- Rainmeter 4.5.17.3700 or higher
+- Rainmeter 4.5.20.3803 or higher
 
 Note: You will need Windows 11 for the next options to work!
+- DarkMode
+- MicaOnFocus
 - Corner
 - Backdrop
 - BorderVisible
