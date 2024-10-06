@@ -193,7 +193,7 @@ void initBorder(void* rm)
 		if (compare(borderType, L"BOTTOM")) OMT_Border |= DWMFB_BOTTOM;
 		if (compare(borderType, L"ALL"))
 		{
-			//OMT_Border = DWMFB_ALL;
+			OMT_Border = DWMFB_ALL;
 			break;
 		}
 
@@ -456,8 +456,7 @@ PLUGIN_EXPORT void Reload(void* data, void* rm, double* maxValue)
 	checkFeatures();
 	initBackwardsCompability(m, rm);
 
-	if (OMT_MicaFocus) 
-		SetSkinMica(m->skin, OMT_Mica, OMT_MicaFocus);
+	if (OMT_MicaFocus) SetSkinMica(m->skin, OMT_Mica, OMT_MicaFocus);
 
 	if (m->DarkMode == OMT_DarkMode &&
 		m->MicaFocus == OMT_MicaFocus &&
@@ -469,8 +468,7 @@ PLUGIN_EXPORT void Reload(void* data, void* rm, double* maxValue)
 		m->Backdrop == OMT_Backdrop) return;
 
 	SetSkinAccent(m->skin, OMT_DarkMode, OMT_Accent, (DWM_FROSTEDGLASS_BORDER)OMT_Border, OMT_Backdrop);
-	if (!OMT_MicaFocus) 
-		SetSkinMica(m->skin, OMT_Mica, OMT_MicaFocus);
+	if (!OMT_MicaFocus) SetSkinMica(m->skin, OMT_Mica, OMT_MicaFocus);
 	SetSkinCornerAndBorder(m->skin, OMT_Corner, OMT_CBorder);
 
 	checkErrors();
