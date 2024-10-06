@@ -20,11 +20,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Plugin.cpp" />
+    <ClCompile Include="StdAfx.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Plugin.rc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Plugin.h" />
+    <ClInclude Include="StdAfx.h" />
     <ClInclude Include="version.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
