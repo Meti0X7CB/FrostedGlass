@@ -22,7 +22,7 @@ Measure=Plugin
 Plugin=FrostedGlass
 BlurEnabled=1
 ; Type = None | Blur | Acrylic | Mica | MicaAcrylic | MicaAlt
-; Acrylic, Mica, MicaAcrylic, MicaAlt only works for Windows 11.
+; Mica, MicaAcrylic, MicaAlt only works for Windows 11.
 Type=Acrylic
 ; Border = None | Top | Left | Right | Bottom | All
 ; Borders are ignored if Mica is enabled.
@@ -53,8 +53,8 @@ UpdateDivider=-1
 ## Type
 
 Valid options for `Type` are:
-- Win 10+ Required > `None`, `Blur`
-- Win 11 Required > `Acrylic`, `Mica`, `MicaAcrylic`, `MicaAlt`
+- Win +10 Required > `None`, `Blur`. `Acrylic` 
+- Win 11 Required > `Mica`, `MicaAcrylic`, `MicaAlt`
 
 ## DarkMode
 Valid options for `DarkMode` are:
