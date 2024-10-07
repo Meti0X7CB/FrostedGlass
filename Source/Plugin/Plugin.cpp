@@ -20,6 +20,7 @@ DWM_FROSTEDGLASS_CBORDER OMT_CBorder;
 
 // OS ENVIROMENT
 static bool isValidWinVersion = false;
+static bool isWin10 = false;
 static bool isWin11 = false;
 static bool isWin11Mica = false;
 
@@ -366,7 +367,7 @@ void checkFeatures()
 		OMT_DarkMode = FALSE;
 	}
 
-	if (OMT_Accent == DWMFB_ACRYLIC && !isWin11)
+	if (OMT_Accent == DWMFB_ACRYLIC && !isWin10)
 	{
 		Error_Acrylic = true;
 		OMT_Accent = DWMFB_BLURBEHIND;
@@ -407,7 +408,7 @@ void checkErrors()
 		RmLog(LOG_WARNING, L"Dark Mode is not supported until Windows 11 build 22000.");
 	
 	if (Error_Acrylic)
-		RmLog(LOG_WARNING, L"Acrylic is not supported until Windows 11 build 22000.");
+		RmLog(LOG_WARNING, L"Acrylic is not supported until Windows 10 build 17134 and Windows 11 build 22000.");
 	
 	if (Error_Corner)
 		RmLog(LOG_WARNING, L"Round Corner is not supported until Windows 11 build 22000.");
@@ -427,6 +428,7 @@ PLUGIN_EXPORT void Initialize(void** data, void* rm)
 
 	isValidWinVersion = true;
 
+	isWin10 = IsAtLeastWin10Build(BUILD_1803);
 	isWin11Mica = IsAtLeastWin10Build(BUILD_22H2);
 	isWin11 = isWin11Mica ? true : IsAtLeastWin10Build(BUILD_WIN11);
 

@@ -5,6 +5,8 @@
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
 #endif
 
+constexpr DWORD BUILD_1803 = 17134; // Windows 10 1803 (April 2018 Update)
+
 constexpr DWORD BUILD_WIN11 = 22000; // Windows 11 first "stable" build
 constexpr DWORD BUILD_22H2 = 22621; // Windows 11 22H2 first to support mica properly
 
