@@ -24,6 +24,8 @@ static bool isWin11 = false;
 static bool isWin11Mica = false;
 
 // PLUGIN ENVIROMENT
+static bool Error_HModule = true;
+static bool Error_HDwmapi = true;
 static bool Error_DarkMode = false;
 static bool Error_Acrylic = false;
 static bool Error_Mica = false;
@@ -66,15 +68,28 @@ inline bool IsAtLeastWin10Build(DWORD buildNumber)
 
 void loadModule()
 {
-	if (!hModule || SetWindowCompositionAttribute == NULL) 
+	if (Error_HModule || SetWindowCompositionAttribute == NULL)
 	{
+
 		if ((hModule = LoadLibrary(TEXT("user32.dll"))))
 		{
+			Error_HModule = false;
 			SetWindowCompositionAttribute = (pSetWindowCompositionAttribute)GetProcAddress(hModule, "SetWindowCompositionAttribute");
 			GetWindowCompositionAttribute = (pGetWindowCompositionAttribute)GetProcAddress(hModule, "GetWindowCompositionAttribute");
 		}
 		if ((hDwmApi = LoadLibrary(L"DWMAPI.dll")))
+		{
+			Error_HDwmapi = false;
 			SetWindowAttribute = (pDwmSetWindowAttribute)GetProcAddress(hDwmApi, "DwmSetWindowAttribute");
+		}
+		if (SetWindowCompositionAttribute == NULL)
+			RmLog(LOG_ERROR, L"Could not load the SetWindowCompositionAttribute function from user32.dll, did microsoft remove it?");
+
+		if (GetWindowCompositionAttribute == NULL)
+			RmLog(LOG_ERROR, L"Could not load the GetWindowCompositionAttribute function from user32.dll, did microsoft remove it?");
+
+		if (SetWindowAttribute == NULL)
+			RmLog(LOG_ERROR, L"Could not load the DwmSetWindowAttribute function from DWMAPI.dll");
 	}
 	references++;
 }
@@ -82,7 +97,7 @@ void loadModule()
 void unloadModule()
 {
 	references--;
-	if (references <= 0) 
+	if (references <= 0)
 	{
 		FreeLibrary(hModule);
 		FreeLibrary(hDwmApi);
@@ -302,7 +317,7 @@ void initBackwardsCompability(Measure* m, void* rm)
 
 void SetSkinAccent(HWND hwnd, BOOL& skinDarkMode, const DWM_FROSTEDGLASS_BLUR& skinAccent, const DWM_FROSTEDGLASS_BORDER& skinBorder, const DWM_FROSTEDGLASS_BACKDROP& skinBackdrop)
 {
-	if (!hModule && !SetWindowCompositionAttribute) return;
+	if (Error_HModule) return;
 
 	ACCENTPOLICY policy = { skinAccent, skinBorder, skinBackdrop, NULL };
 	WINCOMPATTRDATA data = { WCA_ACCENT_POLICY, &policy, sizeof(policy) };
@@ -314,7 +329,7 @@ void SetSkinAccent(HWND hwnd, BOOL& skinDarkMode, const DWM_FROSTEDGLASS_BLUR& s
 
 void SetSkinMica(HWND hwnd, const DWM_SYSTEMBACKDROP_TYPE& skinMica, BOOL& skinMicaFocus)
 {
-	if (!hModule && !SetWindowCompositionAttribute) return;
+	if (Error_HModule) return;
 
 	if (isWin11Mica)
 	{
@@ -332,7 +347,7 @@ void SetSkinMica(HWND hwnd, const DWM_SYSTEMBACKDROP_TYPE& skinMica, BOOL& skinM
 
 void SetSkinCornerAndBorder(HWND hwnd, const DWM_WINDOW_CORNER_PREFERENCE& skinCorner, const DWM_FROSTEDGLASS_CBORDER& skinCBorder)
 {
-	if (!hModule && !SetWindowCompositionAttribute) return;
+	if (Error_HModule) return;
 	
 	if (isWin11)
 	{
@@ -385,15 +400,6 @@ void checkFeatures()
 
 void checkErrors()
 {
-	if (SetWindowCompositionAttribute == NULL)
-		RmLog(LOG_ERROR, L"Could not load the SetWindowCompositionAttribute function from user32.dll, did microsoft remove it?");
-
-	if (GetWindowCompositionAttribute == NULL)
-		RmLog(LOG_ERROR, L"Could not load the GetWindowCompositionAttribute function from user32.dll, did microsoft remove it?");
-
-	if (SetWindowAttribute == NULL)
-		RmLog(LOG_ERROR, L"Could not load the DwmSetWindowAttribute function from DWMAPI.dll");
-
 	if (Error_Mica)
 		RmLog(LOG_WARNING, L"Mica is not supported until Windows 11 build 22621.");
 	
@@ -434,7 +440,6 @@ PLUGIN_EXPORT void Initialize(void** data, void* rm)
 	OMT_CBorder = DWMFCB_VISIBLE;
 
 	Measure* m = new Measure;
-	m->skin = RmGetSkinWindow(rm);
 	initDarkMode(rm);
 	initMica(rm);
 	loadModule();
@@ -466,7 +471,6 @@ PLUGIN_EXPORT void Reload(void* data, void* rm, double* maxValue)
 		m->Corner == OMT_Corner &&
 		m->CBorder == OMT_CBorder &&
 		m->Backdrop == OMT_Backdrop) return;
-
 	SetSkinAccent(m->skin, OMT_DarkMode, OMT_Accent, (DWM_FROSTEDGLASS_BORDER)OMT_Border, OMT_Backdrop);
 	if (!OMT_MicaFocus) SetSkinMica(m->skin, OMT_Mica, OMT_MicaFocus);
 	SetSkinCornerAndBorder(m->skin, OMT_Corner, OMT_CBorder);
@@ -502,7 +506,7 @@ PLUGIN_EXPORT void ExecuteBang(void* data, LPCWSTR args)
 		return;
 	}
 
-	if (!hModule && !SetWindowCompositionAttribute) return;
+	if (Error_HModule) return;
 
 	Measure* m = (Measure*)data;
 	std::wstring sargs = args;
@@ -806,7 +810,6 @@ PLUGIN_EXPORT void ExecuteBang(void* data, LPCWSTR args)
 		SetSkinMica(m->skin, m->Mica, m->MicaFocus);
 		return;
 	}
-
 }
 
 PLUGIN_EXPORT void Finalize(void* data)
