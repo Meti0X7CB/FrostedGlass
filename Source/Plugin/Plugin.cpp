@@ -1,83 +1,45 @@
-#include <Windows.h>
-#include "../API/RainmeterAPI.h"
-#include <string>
-#include <sstream>
-#include <VersionHelpers.h>
-#include <dwmapi.h>
 
-// Overview: This is a blank canvas on which to build your plugin.
+#include "StdAfx.h"
+#include "Plugin.h"
 
-// Note: GetString and ExecuteBang have been commented out. If you need
+// Note: GetString  have been commented out. If you need
 // GetString and/or ExecuteBang and you have read what they are used for
 // from the SDK docs, uncomment the function(s). Otherwise leave them
 // commented out (or get rid of them)!
 
+// MEASURE ENVIROMENT | ORIGINAL MESAURES TYPE -> OMT
 
-const COLORREF rgbNull = 0xFFFFFFFE;
-const COLORREF rgbDefault = 0xFFFFFFFF;
+BOOL OMT_DarkMode;
+BOOL OMT_MicaFocus;
+DWM_FROSTEDGLASS_BLUR OMT_Accent;
+DWM_SYSTEMBACKDROP_TYPE OMT_Mica;
+DWM_FROSTEDGLASS_BACKDROP OMT_Backdrop;
+int32_t OMT_Border;
+DWM_WINDOW_CORNER_PREFERENCE OMT_Corner;
+DWM_FROSTEDGLASS_CBORDER OMT_CBorder;
 
-const int WCA_ACCENT_POLICY = 19;
+// OS ENVIROMENT
+static bool isValidWinVersion = false;
+static bool isWin10 = false;
+static bool isWin11 = false;
+static bool isWin11Mica = false;
 
-enum class AccentState
-{
-	DISABLED = 0,
-	GRADIENT = 1, // not used (only gives a solid color based on Gradient Color)
-	TRANSPARENTGRADIENT = 2, // not used (Always gives light blue for me >.>)
-	BLURBEHIND = 3,
-	ACRYLIC = 4,
-	INVALID = 5
-};
+// PLUGIN ENVIROMENT
+static bool Error_HModule = true;
+static bool Error_HDwmapi = true;
+static bool Error_DarkMode = false;
+static bool Error_Acrylic = false;
+static bool Error_Mica = false;
+static bool Error_Corner = false;
+static bool Error_CBorder = false;
+static bool Error_Backdrop = false;
 
-enum AccentFlags
-{
-	NONE = 0,
-	LEFTBORDER = 0x20,
-	TOPBORDER = 0x40,
-	RIGHTBORDER = 0x80,
-	BOTTOMBORDER = 0x100,
-	ALLBORDERS = (LEFTBORDER | TOPBORDER | RIGHTBORDER | BOTTOMBORDER)
-};
+// 
 
-enum AccentDrop
-{
-	DARK = 0x00000000,
-	DARK2 = 0x3F000000,
-	DARK3 = 0x7E000000,
-	DARK4 = 0xBD000000,
-	DARK5 = 0xFF000000,
-	LIGHT = 0x00FFFFFF,
-	LIGHT2 = 0x3FFFFFFF,
-	LIGHT3 = 0x7EFFFFFF,
-	LIGHT4 = 0xBDFFFFFF,
-	LIGHT5 = 0xFFFFFFFF,
-};
-
-struct ACCENTPOLICY
-{
-	int nAccentState;
-	int nFlags;
-	unsigned int nColor;
-	int nAnimationId;
-};
-
-struct WINCOMPATTRDATA
-{
-	int nAttribute;
-	PVOID pData;
-	ULONG ulDataSize;
-};
-
-HINSTANCE hModule;
-typedef BOOL(WINAPI* pSetWindowCompositionAttribute)(HWND, WINCOMPATTRDATA*);
-pSetWindowCompositionAttribute SetWindowCompositionAttribute;
-typedef BOOL(WINAPI* pGetWindowCompositionAttribute)(HWND, WINCOMPATTRDATA*);
-pGetWindowCompositionAttribute GetWindowCompositionAttribute;
-
-HMODULE hDwmApi;
-typedef HRESULT(WINAPI* pDwmSetWindowAttribute)(HWND, DWORD, LPCVOID, DWORD);
-pDwmSetWindowAttribute SetWindowAttribute;
-
+MARGINS margins = {};
 int references = 0;
+
+// 
 
 bool compare(std::wstring& in, const std::wstring& search)
 {
@@ -92,59 +54,43 @@ bool compare(std::wstring& in, const std::wstring& search)
 	return false;
 }
 
-bool IsWindowsBuildOrGreater(WORD wMajorVersion, WORD wMinorVersion, DWORD dwBuildNumber) {
-	OSVERSIONINFOEXW osvi = { sizeof(osvi), 0, 0, 0, 0, { 0 }, 0, 0 };
-	DWORDLONG mask = 0;
-
-	mask = VerSetConditionMask(mask, VER_MAJORVERSION, VER_GREATER_EQUAL);
-	mask = VerSetConditionMask(mask, VER_MINORVERSION, VER_GREATER_EQUAL);
-	mask = VerSetConditionMask(mask, VER_BUILDNUMBER, VER_GREATER_EQUAL);
-
-	osvi.dwMajorVersion = wMajorVersion;
-	osvi.dwMinorVersion = wMinorVersion;
-	osvi.dwBuildNumber = dwBuildNumber;
-
-	return VerifyVersionInfoW(&osvi, VER_MAJORVERSION | VER_MINORVERSION | VER_BUILDNUMBER, mask) != FALSE;
-}
-
-bool SetSkinAccent(HWND hwnd, const int& border, const AccentState& state, const int& backdrop)
+inline bool IsAtLeastWin10Build(DWORD buildNumber)
 {
+	if (!IsWindows10OrGreater())
+		return false;
 
-	if (hModule && SetWindowCompositionAttribute)
-	{
-		//ACCENTPOLICY policy = { (int)state, border, 0x00000000, 1 }; // set black with 1 in transparency because acrylic does not like transparent
-		ACCENTPOLICY policy = { (int)state, border, backdrop, 1 }; // set black with 1 in transparency because acrylic does not like transparent
-		WINCOMPATTRDATA data = { WCA_ACCENT_POLICY, &policy, sizeof(ACCENTPOLICY) };
-		SetWindowCompositionAttribute(hwnd, &data);
-		return true;
-	}
-	return false;
+	const auto mask = VerSetConditionMask(0, VER_BUILDNUMBER, VER_GREATER_EQUAL);
+
+	OSVERSIONINFOEXW osvi{};
+	osvi.dwOSVersionInfoSize = sizeof(osvi);
+	osvi.dwBuildNumber = buildNumber;
+	return VerifyVersionInfo(&osvi, VER_BUILDNUMBER, mask) != FALSE;
 }
 
 void loadModule()
 {
-	if (!hModule || SetWindowCompositionAttribute == NULL) {
-		hModule = LoadLibrary(TEXT("user32.dll"));
-		SetWindowCompositionAttribute = (pSetWindowCompositionAttribute)GetProcAddress(hModule, "SetWindowCompositionAttribute");
+	if (Error_HModule || SetWindowCompositionAttribute == NULL)
+	{
 
-		if (SetWindowCompositionAttribute == NULL)
+		if ((hModule = LoadLibrary(TEXT("user32.dll"))))
 		{
-			RmLog(LOG_ERROR, L"Could not load the SetWindowCompositionAttribute function from user32.dll, did microsoft remove it?");
+			Error_HModule = false;
+			SetWindowCompositionAttribute = (pSetWindowCompositionAttribute)GetProcAddress(hModule, "SetWindowCompositionAttribute");
+			GetWindowCompositionAttribute = (pGetWindowCompositionAttribute)GetProcAddress(hModule, "GetWindowCompositionAttribute");
 		}
-
-		GetWindowCompositionAttribute = (pGetWindowCompositionAttribute)GetProcAddress(hModule, "GetWindowCompositionAttribute");
+		if ((hDwmApi = LoadLibrary(L"DWMAPI.dll")))
+		{
+			Error_HDwmapi = false;
+			SetWindowAttribute = (pDwmSetWindowAttribute)GetProcAddress(hDwmApi, "DwmSetWindowAttribute");
+		}
+		if (SetWindowCompositionAttribute == NULL)
+			RmLog(LOG_ERROR, L"Could not load the SetWindowCompositionAttribute function from user32.dll, did microsoft remove it?");
 
 		if (GetWindowCompositionAttribute == NULL)
-		{
 			RmLog(LOG_ERROR, L"Could not load the GetWindowCompositionAttribute function from user32.dll, did microsoft remove it?");
-		}
 
-		hDwmApi = LoadLibrary(L"DWMAPI.dll");
-		SetWindowAttribute = (pDwmSetWindowAttribute)GetProcAddress(hDwmApi, "DwmSetWindowAttribute");
-
-		if (SetWindowAttribute == NULL) {
+		if (SetWindowAttribute == NULL)
 			RmLog(LOG_ERROR, L"Could not load the DwmSetWindowAttribute function from DWMAPI.dll");
-		}
 	}
 	references++;
 }
@@ -161,171 +107,386 @@ void unloadModule()
 	}
 }
 
-struct Measure
+// 
+
+void initDarkMode(void* rm)
 {
-	HWND skin;
-	AccentState prevState = (AccentState)0;
-	AccentState nextState = (AccentState)0;
-	int prevBorder = 0;
-	DWM_WINDOW_CORNER_PREFERENCE prevCorner = DWMWCP_DONOTROUND;
-	DWM_WINDOW_CORNER_PREFERENCE originalCorner = DWMWCP_DONOTROUND;
-	DWM_WINDOW_CORNER_PREFERENCE nextCorner = DWMWCP_DONOTROUND;
-	AccentDrop prevBackdrop = (AccentDrop)0;
-	int prevBorderVisible = 1;
-	bool doWarn = true;
-};
+	if (RmReadInt(rm, L"DarkMode", 0) == 0)
+		OMT_DarkMode = FALSE;
+	else
+		OMT_DarkMode = TRUE;
+}
+
+void initAccent(void* rm)
+{
+	std::wstring accentType = RmReadString(rm, L"Type", L"BLUR");
+
+	if (_wcsicmp(accentType.c_str(), L"NONE") == 0) 
+	{
+		OMT_Accent = DWMFB_DISABLED;
+		OMT_Mica = DWMSBT_NONE;
+		return;
+	}
+	if (_wcsicmp(accentType.c_str(), L"GRADIENT") == 0)
+	{
+		OMT_Accent = DWMFB_GRADIENT;
+		OMT_Mica = DWMSBT_NONE;
+		return;
+	}
+	if (_wcsicmp(accentType.c_str(), L"TRANSPARENTGRADIENT") == 0)
+	{
+		OMT_Accent = DWMFB_TRANSPARENTGRADIENT;
+		OMT_Mica = DWMSBT_NONE;
+		return;
+	}
+	if (_wcsicmp(accentType.c_str(), L"BLUR") == 0)
+	{
+		OMT_Accent = DWMFB_BLURBEHIND;
+		OMT_Mica = DWMSBT_NONE;
+		return;
+	}
+	if (_wcsicmp(accentType.c_str(), L"ACRYLIC") == 0)
+	{
+		OMT_Accent = DWMFB_ACRYLIC;
+		OMT_Mica = DWMSBT_NONE;
+		return;
+	}
+	if (_wcsicmp(accentType.c_str(), L"HOSTBACKDROP") == 0)
+	{
+		OMT_Accent = DWMFB_HOSTBACKDROP;
+		OMT_Mica = DWMSBT_NONE;
+		return;
+	}
+	if (_wcsicmp(accentType.c_str(), L"TRANSPARENTFULL") == 0)
+	{
+		OMT_Accent = DWMFB_TRANSPARENTFULL;
+		OMT_Mica = DWMSBT_NONE;
+		return;
+	}
+	if (_wcsicmp(accentType.c_str(), L"MICA") == 0)
+	{
+		OMT_Accent = DWMFB_DISABLED;
+		OMT_Mica = DWMSBT_MAINWINDOW;
+		return;
+	}
+	if (_wcsicmp(accentType.c_str(), L"MICAACRYLIC") == 0)
+	{
+		OMT_Accent = DWMFB_DISABLED;
+		OMT_Mica = DWMSBT_TRANSIENTWINDOW;
+		return;
+	}
+	if (_wcsicmp(accentType.c_str(), L"MICAALT") == 0)
+	{
+		OMT_Accent = DWMFB_DISABLED;
+		OMT_Mica = DWMSBT_TABBEDWINDOW;
+		return;
+	}
+}
+
+void initMica(void* rm)
+{
+	if (RmReadInt(rm, L"MicaOnFocus", 0) == 0)
+		OMT_MicaFocus = FALSE;
+	else
+		OMT_MicaFocus = TRUE;
+}
+
+void initBorder(void* rm)
+{
+	std::wstring borderType = RmReadString(rm, L"Border", L"NONE");
+
+	if (compare(borderType, L"NONE"))
+	{
+		OMT_Border = DWMFB_NONE;
+		return;
+	}
+
+	while (!borderType.empty())
+	{
+		if (compare(borderType, L"TOP")) OMT_Border |= DWMFB_TOP;
+		if (compare(borderType, L"LEFT")) OMT_Border |= DWMFB_LEFT;
+		if (compare(borderType, L"RIGHT")) OMT_Border |= DWMFB_RIGHT;
+		if (compare(borderType, L"BOTTOM")) OMT_Border |= DWMFB_BOTTOM;
+		if (compare(borderType, L"ALL"))
+		{
+			OMT_Border = DWMFB_ALL;
+			break;
+		}
+
+		if (!borderType.empty() && !compare(borderType, L"|"))
+		{
+			RmLogF(rm, LOG_ERROR, L"Invalid border format, expected | between tokens");
+			OMT_Border = DWMFB_NONE;
+			break;
+		}
+	}
+}
+
+void initCornerAndBorder(void* rm)
+{
+	if (RmReadInt(rm, L"BorderVisible", 1) == 1)
+		OMT_CBorder = DWMFCB_VISIBLE;
+	else
+		OMT_CBorder = DWMFCB_HIDDEN;
+
+	std::wstring cornerType = RmReadString(rm, L"Corner", L"");
+
+	if (_wcsicmp(cornerType.c_str(), L"ROUND") == 0)
+	{
+		OMT_Corner = DWMWCP_ROUND;
+		return;
+	}
+	if (_wcsicmp(cornerType.c_str(), L"ROUNDSMALL") == 0)
+	{
+		OMT_Corner = DWMWCP_ROUNDSMALL;
+		return;
+	}
+	OMT_Corner = DWMWCP_DONOTROUND;
+}
+
+void initBackdrop(void* rm)
+{
+	std::wstring backdropTypes = RmReadString(rm, L"Backdrop", L"");
+
+	if (_wcsicmp(backdropTypes.c_str(), L"DARK") == 0)
+	{
+		OMT_Backdrop = DWMFB_DARK;
+		return;
+	}
+	if (_wcsicmp(backdropTypes.c_str(), L"LIGHT") == 0)
+	{
+		OMT_Backdrop = DWMFB_LIGHT;
+		return;
+	}
+	if (_wcsicmp(backdropTypes.c_str(), L"DARK2") == 0)
+	{
+		OMT_Backdrop = DWMFB_DARK2;
+		return;
+	}
+	if (_wcsicmp(backdropTypes.c_str(), L"LIGHT2") == 0)
+	{
+		OMT_Backdrop = DWMFB_LIGHT2;
+		return;
+	}
+	if (_wcsicmp(backdropTypes.c_str(), L"DARK3") == 0)
+	{
+		OMT_Backdrop = DWMFB_DARK3;
+		return;
+	}
+	if (_wcsicmp(backdropTypes.c_str(), L"LIGHT3") == 0)
+	{
+		OMT_Backdrop = DWMFB_LIGHT3;
+		return;
+	}
+	if (_wcsicmp(backdropTypes.c_str(), L"DARK4") == 0)
+	{
+		OMT_Backdrop = DWMFB_DARK4;
+		return;
+	}
+	if (_wcsicmp(backdropTypes.c_str(), L"LIGHT4") == 0)
+	{
+		OMT_Backdrop = DWMFB_LIGHT4;
+		return;
+	}
+	if (_wcsicmp(backdropTypes.c_str(), L"DARK5") == 0)
+	{
+		OMT_Backdrop = DWMFB_DARK5;
+		return;
+	}
+	if (_wcsicmp(backdropTypes.c_str(), L"LIGHT5") == 0)
+	{
+		OMT_Backdrop = DWMFB_LIGHT5;
+		return;
+	}
+}
+
+void initBackwardsCompability(Measure* m, void* rm)
+{
+	if (RmReadInt(rm, L"BlurEnabled", 1) == 0)
+	{	
+		m->temp_Accent = OMT_Accent;
+		m->temp_Mica = OMT_Mica;
+		m->temp_Corner = OMT_Corner;
+
+		OMT_Accent = DWMFB_DISABLED;
+		OMT_Mica = DWMSBT_NONE;
+		OMT_Corner = DWMWCP_DONOTROUND;
+	}
+}
+
+// 
+
+void SetSkinAccent(HWND hwnd, BOOL& skinDarkMode, const DWM_FROSTEDGLASS_BLUR& skinAccent, const DWM_FROSTEDGLASS_BORDER& skinBorder, const DWM_FROSTEDGLASS_BACKDROP& skinBackdrop)
+{
+	if (Error_HModule) return;
+
+	ACCENTPOLICY policy = { skinAccent, skinBorder, skinBackdrop, NULL };
+	WINCOMPATTRDATA data = { WCA_ACCENT_POLICY, &policy, sizeof(policy) };
+	SetWindowCompositionAttribute(hwnd, &data);
+
+	if (isWin11)
+		SetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &skinDarkMode, sizeof(skinDarkMode));
+}
+
+void SetSkinMica(HWND hwnd, const DWM_SYSTEMBACKDROP_TYPE& skinMica, BOOL& skinMicaFocus)
+{
+	if (Error_HModule) return;
+
+	if (isWin11Mica)
+	{
+		if (!skinMicaFocus)
+			SetWindowPos(hwnd, nullptr, NULL, NULL, NULL, NULL, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED | SWP_DRAWFRAME);
+
+		margins = { 0 };
+		DwmExtendFrameIntoClientArea(hwnd, &margins);
+		margins = { -1 };
+		DwmExtendFrameIntoClientArea(hwnd, &margins);
+
+		SetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &skinMica, sizeof(skinMica));
+	}		
+}
+
+void SetSkinCornerAndBorder(HWND hwnd, const DWM_WINDOW_CORNER_PREFERENCE& skinCorner, const DWM_FROSTEDGLASS_CBORDER& skinCBorder)
+{
+	if (Error_HModule) return;
+	
+	if (isWin11)
+	{
+		SetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, &skinCorner, sizeof(skinCorner));
+		SetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &skinCBorder, sizeof(skinCBorder));
+	}
+}
+
+//
+
+void checkFeatures()
+{
+	if (OMT_DarkMode == TRUE && !isWin11)
+	{
+		Error_DarkMode = true;
+		OMT_DarkMode = FALSE;
+	}
+
+	if (OMT_Accent == DWMFB_ACRYLIC && !isWin10)
+	{
+		Error_Acrylic = true;
+		OMT_Accent = DWMFB_BLURBEHIND;
+	}
+
+	if (OMT_Mica != DWMSBT_NONE && !isWin11Mica)
+	{
+		Error_Mica = true;
+		OMT_MicaFocus = FALSE;
+		OMT_Accent = DWMFB_BLURBEHIND;
+	}
+
+	if (OMT_Corner != DWMWCP_DONOTROUND && !isWin11)
+	{
+		Error_Corner = true;
+		OMT_Corner = DWMWCP_DONOTROUND;
+	}
+	
+	if (OMT_CBorder != DWMFCB_VISIBLE && !isWin11)
+	{
+		Error_CBorder = true;
+		OMT_CBorder = DWMFCB_VISIBLE;
+	}
+
+	if (OMT_Backdrop != DWMFB_NOCOLOR && !isWin11)
+	{
+		Error_Backdrop = true;
+		OMT_Backdrop = DWMFB_NOCOLOR;
+	}
+}
+
+void checkErrors()
+{
+	if (Error_Mica)
+		RmLog(LOG_WARNING, L"Mica is not supported until Windows 11 build 22621.");
+	
+	if (Error_DarkMode)
+		RmLog(LOG_WARNING, L"Dark Mode is not supported until Windows 11 build 22000.");
+	
+	if (Error_Acrylic)
+		RmLog(LOG_WARNING, L"Acrylic is not supported until Windows 10 build 17134 and Windows 11 build 22000.");
+	
+	if (Error_Corner)
+		RmLog(LOG_WARNING, L"Round Corner is not supported until Windows 11 build 22000.");
+	
+	if (Error_CBorder)
+		RmLog(LOG_WARNING, L"'BorderVisible' option only works for Round Corners.");
+	
+	if (Error_Backdrop)
+		RmLog(LOG_WARNING, L"Backdrop is not supported until Windows 11 build 22000.");
+}
+
+// RAINMETER FUNCTIONS
 
 PLUGIN_EXPORT void Initialize(void** data, void* rm)
 {
+	if (!IsWindows10OrGreater()) return;
+
+	isValidWinVersion = true;
+
+	isWin10 = IsAtLeastWin10Build(BUILD_1803);
+	isWin11Mica = IsAtLeastWin10Build(BUILD_22H2);
+	isWin11 = isWin11Mica ? true : IsAtLeastWin10Build(BUILD_WIN11);
+
+	OMT_DarkMode = FALSE;
+	OMT_MicaFocus = FALSE;
+	OMT_Accent = DWMFB_DISABLED;
+	OMT_Mica = DWMSBT_NONE;
+	OMT_Backdrop = DWMFB_NOCOLOR;
+	OMT_Border = DWMFB_NONE;
+	OMT_Corner = DWMWCP_DONOTROUND;
+	OMT_CBorder = DWMFCB_VISIBLE;
+
 	Measure* m = new Measure;
-	m->skin = RmGetSkinWindow(rm);
+	initDarkMode(rm);
+	initMica(rm);
 	loadModule();
 	*data = m;
+
 }
 
 PLUGIN_EXPORT void Reload(void* data, void* rm, double* maxValue)
 {
+	if (!isValidWinVersion) return;
+
 	Measure* m = (Measure*)data;
 	m->skin = RmGetSkinWindow(rm);
 
-	// Default Values
-	AccentState accent = AccentState::BLURBEHIND;
-	int borders = 0;
-	DWM_WINDOW_CORNER_PREFERENCE corner = DWMWCP_DONOTROUND;
-	AccentDrop backdrop = AccentDrop::DARK;
-	int borderVisible = 1;
+	initAccent(rm);
+	initBorder(rm);
+	initBackdrop(rm);
+	initCornerAndBorder(rm);
+	checkFeatures();
+	initBackwardsCompability(m, rm);
 
-	// Type Option
-	std::wstring type = RmReadString(rm, L"Type", L"Blur");
+	if (OMT_MicaFocus) SetSkinMica(m->skin, OMT_Mica, OMT_MicaFocus);
 
-	if (_wcsicmp(type.c_str(), L"ACRYLIC") == 0) accent = AccentState::ACRYLIC;
-	if (_wcsicmp(type.c_str(), L"NONE") == 0) accent = AccentState::DISABLED;
+	if (m->DarkMode == OMT_DarkMode &&
+		m->MicaFocus == OMT_MicaFocus &&
+		m->Accent == OMT_Accent &&
+		m->Mica == OMT_Mica &&
+		m->Border == OMT_Border &&
+		m->Corner == OMT_Corner &&
+		m->CBorder == OMT_CBorder &&
+		m->Backdrop == OMT_Backdrop) return;
+	SetSkinAccent(m->skin, OMT_DarkMode, OMT_Accent, (DWM_FROSTEDGLASS_BORDER)OMT_Border, OMT_Backdrop);
+	if (!OMT_MicaFocus) SetSkinMica(m->skin, OMT_Mica, OMT_MicaFocus);
+	SetSkinCornerAndBorder(m->skin, OMT_Corner, OMT_CBorder);
 
-	if (!IsWindows10OrGreater() && !IsWindowsBuildOrGreater(10, 0, 17063) && accent == AccentState::ACRYLIC)
-	{
-		if (m->doWarn)
-			RmLogF(rm, LOG_WARNING, L"Acrylic is not supported on windows 10 builds until build 17063. Falling back to blur.");
-		accent = AccentState::BLURBEHIND;
-	}
+	checkErrors();
 
-	if (!IsWindows10OrGreater() && (accent == AccentState::ACRYLIC || accent == AccentState::BLURBEHIND))
-	{
-		if (m->doWarn)
-			RmLogF(rm, LOG_WARNING, L"This plugin is not supported on other platforms than Windows 10");
-
-		accent = AccentState::DISABLED;
-		m->doWarn = m->prevState != accent;
-		m->prevState = accent;
-		return;
-	}
-
-	// Border Option
-	std::wstring borderTypes = RmReadString(rm, L"Border", L"");
-
-	while (!borderTypes.empty())
-	{
-		if (compare(borderTypes, L"TOP")) borders |= TOPBORDER;
-		else if (compare(borderTypes, L"LEFT")) borders |= LEFTBORDER;
-		else if (compare(borderTypes, L"RIGHT")) borders |= RIGHTBORDER;
-		else if (compare(borderTypes, L"BOTTOM")) borders |= BOTTOMBORDER;
-		else if (compare(borderTypes, L"NONE")) break;
-		else if (compare(borderTypes, L"ALL"))
-		{
-			borders = ALLBORDERS;
-			break;
-		}
-
-		if (!borderTypes.empty() && !compare(borderTypes, L"|"))
-		{
-			if (m->doWarn)
-				RmLogF(rm, LOG_ERROR, L"Invalid border format, expected | between tokens");
-
-			borders = 0;
-			break;
-		}
-	}
-
-	// Corner Option
-	std::wstring cornerType = RmReadString(rm, L"Corner", L"");
-
-	if (_wcsicmp(cornerType.c_str(), L"ROUND") == 0) {
-		corner = DWMWCP_ROUND;
-	}
-	else if (_wcsicmp(cornerType.c_str(), L"ROUNDSMALL") == 0) {
-		corner = DWMWCP_ROUNDSMALL;
-	}
-
-	m->nextCorner = corner;
-	m->originalCorner = corner;
-
-	// Backdrop Option
-	std::wstring backdropTypes = RmReadString(rm, L"Backdrop", L"");
-
-	if (_wcsicmp(backdropTypes.c_str(), L"DARK2") == 0) backdrop = AccentDrop::DARK2;
-	if (_wcsicmp(backdropTypes.c_str(), L"DARK3") == 0) backdrop = AccentDrop::DARK3;
-	if (_wcsicmp(backdropTypes.c_str(), L"DARK4") == 0) backdrop = AccentDrop::DARK4;
-	if (_wcsicmp(backdropTypes.c_str(), L"DARK5") == 0) backdrop = AccentDrop::DARK5;
-	if (_wcsicmp(backdropTypes.c_str(), L"LIGHT") == 0) backdrop = AccentDrop::LIGHT;
-	if (_wcsicmp(backdropTypes.c_str(), L"LIGHT2") == 0) backdrop = AccentDrop::LIGHT2;
-	if (_wcsicmp(backdropTypes.c_str(), L"LIGHT3") == 0) backdrop = AccentDrop::LIGHT3;
-	if (_wcsicmp(backdropTypes.c_str(), L"LIGHT4") == 0) backdrop = AccentDrop::LIGHT4;
-	if (_wcsicmp(backdropTypes.c_str(), L"LIGHT5") == 0) backdrop = AccentDrop::LIGHT5;
-
-	// BorderVisible Option
-	std::wstring BorderVisibleTypes = RmReadString(rm, L"BorderVisible", L"");
-
-	if (_wcsicmp(BorderVisibleTypes.c_str(), L"0") == 0) borderVisible = 0;
-
-	// backwards compability
-	if (RmReadInt(rm, L"BlurEnabled", 1) == 0)
-	{
-		m->nextState = accent;
-		accent = AccentState::DISABLED;
-		m->nextCorner = corner;
-		m->originalCorner = corner;
-		corner = DWMWCP_DONOTROUND;
-	}
-
-	// If nothing changed, do nothing
-	if (m->prevState == accent && m->prevBorder == borders && m->prevCorner == corner && m->prevBackdrop == backdrop && m->prevBorderVisible == borderVisible) return;
-
-	if (IsWindowsBuildOrGreater(10, 0, 22000))
-	{
-		if (SetWindowAttribute) {
-			SetWindowAttribute(RmGetSkinWindow(rm), DWMWA_WINDOW_CORNER_PREFERENCE, &corner, sizeof corner);
-			if (borderVisible == 1) SetWindowAttribute(RmGetSkinWindow(rm), DWMWA_BORDER_COLOR, &rgbDefault, sizeof rgbDefault);
-			else SetWindowAttribute(RmGetSkinWindow(rm), DWMWA_BORDER_COLOR, &rgbNull, sizeof rgbNull);
-		}
-	}
-	else {
-		if (corner != DWMWCP_DONOTROUND) {
-			if (m->doWarn) RmLogF(rm, LOG_WARNING, L"Round corner is not supported on windows 11 builds until build 22000. Falling back to do not round.");
-			corner = DWMWCP_DONOTROUND;
-			m->nextCorner = corner;
-			m->originalCorner = corner;
-		}
-		if (backdrop != NULL) {
-			if (m->doWarn) RmLogF(rm, LOG_WARNING, L"Backdrop is not supported on windows 11 builds until build 22000.");
-			backdrop = AccentDrop::DARK;
-		}
-		if (borderVisible != 1)
-		{
-			if (m->doWarn) RmLogF(rm, LOG_WARNING, L"BorderVisible is not supported on windows 11 builds until build 22000.");
-			borderVisible = 1;
-		}
-	}
-
-	if (!(SetSkinAccent(RmGetSkinWindow(rm), borders, AccentState::DISABLED, backdrop) &&
-		SetSkinAccent(RmGetSkinWindow(rm), borders, accent, backdrop))) {
-		RmLogF(rm, LOG_ERROR, L"Could not load library user32.dll for some unknown reason.");
-	}
-
-	m->doWarn = m->prevState != accent || m->prevBorder != borders || m->prevCorner != corner || m->prevBackdrop != backdrop || m->prevBorderVisible != borderVisible;
-	m->prevState = accent;
-	m->prevBorder = borders;
-	m->prevCorner = corner;
-	m->prevBackdrop = backdrop;
-	m->prevBorderVisible = borderVisible;
+	m->DarkMode = OMT_DarkMode;
+	m->MicaFocus = OMT_MicaFocus;
+	m->Accent = OMT_Accent;
+	m->Mica = OMT_Mica;
+	m->Border = (DWM_FROSTEDGLASS_BORDER)OMT_Border;
+	m->Corner = OMT_Corner;
+	m->CBorder = OMT_CBorder;
+	m->Backdrop = OMT_Backdrop;
 }
 
 PLUGIN_EXPORT double Update(void* data)
@@ -341,242 +502,326 @@ PLUGIN_EXPORT double Update(void* data)
 
 PLUGIN_EXPORT void ExecuteBang(void* data, LPCWSTR args)
 {
+	if (!isValidWinVersion)
+	{
+		RmLog(LOG_WARNING, L"FrostedGlass commands is supported only on Windows 10 and 11.");
+		return;
+	}
+
+	if (Error_HModule) return;
+
 	Measure* m = (Measure*)data;
 	std::wstring sargs = args;
-	bool failed = false;
 
-	if (IsWindowsBuildOrGreater(10, 0, 22000))
+	if (isWin11)
 	{
-		failed = 1;
+		// Mica
+		if (isWin11Mica)
+		{
+			if (compare(sargs, L"SETFOCUS"))
+			{
+				if (m->Mica != DWMSBT_NONE)
+				{
+					m->MicaFocus = TRUE;
+					SetSkinMica(m->skin, m->Mica, m->MicaFocus);
+					m->MicaFocus = OMT_MicaFocus;
+				}
+				return;
+			}
+			if(compare(sargs, L"TOGGLEFOCUS"))
+			{
+				if (m->MicaFocus)
+				{
+					m->MicaFocus = FALSE;
+					OMT_MicaFocus = FALSE;
+				}
+				else
+				{
+					m->MicaFocus = TRUE;
+					OMT_MicaFocus = TRUE;
+				}
+
+				SetSkinMica(m->skin, m->Mica, m->MicaFocus);
+				return;
+			}
+			if (compare(sargs, L"ENABLEFOCUS"))
+			{
+				OMT_MicaFocus = TRUE;
+				m->MicaFocus = TRUE;
+
+				SetSkinMica(m->skin, m->Mica, m->MicaFocus);
+				return;
+			}
+			if (compare(sargs, L"DISABLEFOCUS"))
+			{
+				OMT_MicaFocus = FALSE;
+				m->MicaFocus = FALSE;
+
+				SetSkinMica(m->skin, m->Mica, m->MicaFocus);
+				return;
+			}
+		}
+		// DarkMode
+		if (compare(sargs, L"TOGGLEMODE"))
+		{
+			if (m->DarkMode)
+			{
+				m->DarkMode = FALSE;
+				OMT_DarkMode = FALSE;
+			} 
+			else
+			{
+				m->DarkMode = TRUE;
+				OMT_DarkMode = TRUE;
+			}
+			
+			SetWindowAttribute(m->skin, DWMWA_USE_IMMERSIVE_DARK_MODE, &m->DarkMode, sizeof(m->DarkMode));
+			return;
+		}
+		if (compare(sargs, L"LIGHTMODE"))
+		{
+			OMT_DarkMode = FALSE;
+			m->DarkMode = FALSE;
+
+			SetWindowAttribute(m->skin, DWMWA_USE_IMMERSIVE_DARK_MODE, &m->DarkMode, sizeof(m->DarkMode));
+			return;
+		}
+		if (compare(sargs, L"DARKMODE"))
+		{
+			OMT_DarkMode = TRUE;
+			m->DarkMode = TRUE;
+
+			SetWindowAttribute(m->skin, DWMWA_USE_IMMERSIVE_DARK_MODE, &m->DarkMode, sizeof(m->DarkMode));
+			return;
+		}
+		// Corner
 		if (compare(sargs, L"TOGGLECORNER"))
 		{
-			if (m->prevState != AccentState::DISABLED)
+			if (m->Accent == DWMFB_DISABLED && m->Mica == DWMSBT_NONE) return;
+	
+			if (m->Corner == DWMWCP_DONOTROUND)
 			{
-
-				if (m->prevCorner == DWMWCP_ROUNDSMALL)
-				{
-					m->prevCorner = DWMWCP_DONOTROUND;
-					m->nextCorner = DWMWCP_ROUNDSMALL;
-				}
-				else if (m->prevCorner == DWMWCP_ROUND)
-				{
-					m->prevCorner = DWMWCP_DONOTROUND;
-					m->nextCorner = DWMWCP_ROUND;
-				}
-				else
-				{
-					m->prevCorner = m->originalCorner;
-					m->nextCorner = DWMWCP_DONOTROUND;
-				}
-			}
-			SetWindowAttribute(m->skin, DWMWA_WINDOW_CORNER_PREFERENCE, &m->prevCorner, sizeof m->prevCorner);
-
-		}
-		else if (compare(sargs, L"ENABLECORNER"))
-		{
-			if (m->prevState != AccentState::DISABLED)
-			{
-				m->nextCorner = m->originalCorner;
-				m->prevCorner = m->nextCorner;
-				SetWindowAttribute(m->skin, DWMWA_WINDOW_CORNER_PREFERENCE, &m->prevCorner, sizeof m->prevCorner);
-			}
-		}
-		else if (compare(sargs, L"DISABLECORNER"))
-		{
-			if (m->prevState != AccentState::DISABLED)
-			{
-				if (m->prevCorner == DWMWCP_ROUNDSMALL) m->nextCorner = DWMWCP_ROUNDSMALL;
-				else if (m->prevCorner == DWMWCP_ROUND) m->nextCorner = DWMWCP_ROUND;
-				if (m->prevCorner == DWMWCP_DONOTROUND) m->nextCorner = DWMWCP_DONOTROUND;
-				m->prevCorner = DWMWCP_DONOTROUND;
-
-				SetWindowAttribute(m->skin, DWMWA_WINDOW_CORNER_PREFERENCE, &m->prevCorner, sizeof m->prevCorner);
-			}
-		}
-		else if (compare(sargs, L"SETCORNER"))
-		{
-			if (m->prevState != AccentState::DISABLED) {
-				if (compare(sargs, L"2"))
-				{
-					m->prevCorner = DWMWCP_ROUNDSMALL;
-				}
-				else if (compare(sargs, L"1"))
-				{
-					m->prevCorner = DWMWCP_ROUND;
-				}
-				else
-				{
-					m->prevCorner = DWMWCP_DONOTROUND;
-				}
-				SetWindowAttribute(m->skin, DWMWA_WINDOW_CORNER_PREFERENCE, &m->prevCorner, sizeof m->prevCorner);
-			}
-		}
-		if (compare(sargs, L"TOGGLEBACKDROP"))
-		{
-			if (m->prevBackdrop == AccentDrop::DARK || m->prevBackdrop == AccentDrop::LIGHT) m->prevBackdrop = m->prevBackdrop == AccentDrop::DARK ? AccentDrop::LIGHT : AccentDrop::DARK;
-			else if (m->prevBackdrop == AccentDrop::DARK2 || m->prevBackdrop == AccentDrop::LIGHT2) m->prevBackdrop = m->prevBackdrop == AccentDrop::DARK2 ? AccentDrop::LIGHT2 : AccentDrop::DARK2;
-			else if (m->prevBackdrop == AccentDrop::DARK3 || m->prevBackdrop == AccentDrop::LIGHT3) m->prevBackdrop = m->prevBackdrop == AccentDrop::DARK3 ? AccentDrop::LIGHT3 : AccentDrop::DARK3;
-			else if (m->prevBackdrop == AccentDrop::DARK4 || m->prevBackdrop == AccentDrop::LIGHT4) m->prevBackdrop = m->prevBackdrop == AccentDrop::DARK4 ? AccentDrop::LIGHT4 : AccentDrop::DARK4;
-			else if (m->prevBackdrop == AccentDrop::DARK5 || m->prevBackdrop == AccentDrop::LIGHT5) m->prevBackdrop = m->prevBackdrop == AccentDrop::DARK5 ? AccentDrop::LIGHT5 : AccentDrop::DARK2;
-			failed = SetSkinAccent(m->skin, m->prevBorder, m->prevState, m->prevBackdrop);
-		}
-		else if (compare(sargs, L"LIGHTBACKDROP"))
-		{
-			if (m->prevBackdrop == AccentDrop::DARK) m->prevBackdrop = AccentDrop::LIGHT;
-			else if (m->prevBackdrop == AccentDrop::DARK2) m->prevBackdrop = AccentDrop::LIGHT2;
-			else if (m->prevBackdrop == AccentDrop::DARK3) m->prevBackdrop = AccentDrop::LIGHT3;
-			else if (m->prevBackdrop == AccentDrop::DARK4) m->prevBackdrop = AccentDrop::LIGHT4;
-			else if (m->prevBackdrop == AccentDrop::DARK5) m->prevBackdrop = AccentDrop::LIGHT5;
-			failed = SetSkinAccent(m->skin, m->prevBorder, m->prevState, m->prevBackdrop);
-		}
-		else if (compare(sargs, L"DARKBACKDROP"))
-		{
-			if (m->prevBackdrop == AccentDrop::LIGHT) m->prevBackdrop = AccentDrop::DARK;
-			else if (m->prevBackdrop == AccentDrop::LIGHT2) m->prevBackdrop = AccentDrop::DARK2;
-			else if (m->prevBackdrop == AccentDrop::LIGHT3) m->prevBackdrop = AccentDrop::DARK3;
-			else if (m->prevBackdrop == AccentDrop::LIGHT4) m->prevBackdrop = AccentDrop::DARK4;
-			else if (m->prevBackdrop == AccentDrop::LIGHT5) m->prevBackdrop = AccentDrop::DARK5;
-			failed = SetSkinAccent(m->skin, m->prevBorder, m->prevState, m->prevBackdrop);
-		}
-		else if (compare(sargs, L"SETBACKDROP"))
-		{
-			if (compare(sargs, L"LIGHT"))
-			{
-				if (compare(sargs, L"5")) m->prevBackdrop = AccentDrop::LIGHT5;
-				else if (compare(sargs, L"4")) m->prevBackdrop = AccentDrop::LIGHT4;
-				else if (compare(sargs, L"3")) m->prevBackdrop = AccentDrop::LIGHT3;
-				else if (compare(sargs, L"2")) m->prevBackdrop = AccentDrop::LIGHT2;
-				else if (compare(sargs, L"1")) m->prevBackdrop = AccentDrop::LIGHT;
-			}
-			else if (compare(sargs, L"DARK"))
-			{
-				if (compare(sargs, L"5")) m->prevBackdrop = AccentDrop::DARK5;
-				else if (compare(sargs, L"4")) m->prevBackdrop = AccentDrop::DARK4;
-				else if (compare(sargs, L"3")) m->prevBackdrop = AccentDrop::DARK3;
-				else if (compare(sargs, L"2")) m->prevBackdrop = AccentDrop::DARK2;
-				else if (compare(sargs, L"1")) m->prevBackdrop = AccentDrop::DARK;
-			}
-			SetSkinAccent(m->skin, m->prevBorder, m->prevState, m->prevBackdrop);
-		}
-		if (compare(sargs, L"TOGGLEBORDERS"))
-		{
-			if (m->prevBorderVisible == 1)
-			{
-				SetWindowAttribute(m->skin, DWMWA_BORDER_COLOR, &rgbNull, sizeof rgbNull);
-				m->prevBorderVisible = 0;
+				m->Corner = m->temp_Corner;
+				m->temp_Corner = DWMWCP_DONOTROUND;
 			}
 			else
 			{
-				SetWindowAttribute(m->skin, DWMWA_BORDER_COLOR, &rgbDefault, sizeof rgbDefault);
-				m->prevBorderVisible = 1;
+				m->temp_Corner = m->Corner;
+				m->Corner = DWMWCP_DONOTROUND;
 			}
+
+			SetWindowAttribute(m->skin, DWMWA_WINDOW_CORNER_PREFERENCE, &m->Corner, sizeof(m->Corner));
+			return;
 		}
-		else if (compare(sargs, L"ENABLEBORDERS"))
+		if (compare(sargs, L"ENABLECORNER"))
 		{
-			SetWindowAttribute(m->skin, DWMWA_BORDER_COLOR, &rgbDefault, sizeof rgbDefault);
-			m->prevBorderVisible = 1;
+			if (m->Accent == DWMFB_DISABLED && m->Mica == DWMSBT_NONE) return;
+
+			if (m->Corner != DWMWCP_DONOTROUND) return;
+
+			m->Corner = m->temp_Corner;
+
+			SetWindowAttribute(m->skin, DWMWA_WINDOW_CORNER_PREFERENCE, &m->Corner, sizeof(m->Corner));
+			return;
 		}
-		else if (compare(sargs, L"DISABLEBORDERS"))
+		if (compare(sargs, L"DISABLECORNER"))
 		{
-			SetWindowAttribute(m->skin, DWMWA_BORDER_COLOR, &rgbNull, sizeof rgbNull);
-			m->prevBorderVisible = 0;
+			if (m->Accent == DWMFB_DISABLED && m->Mica == DWMSBT_NONE) return;
+
+			if (m->Corner == DWMWCP_DONOTROUND) return;
+
+			m->temp_Corner = m->Corner;
+			m->Corner = DWMWCP_DONOTROUND;
+
+			SetWindowAttribute(m->skin, DWMWA_WINDOW_CORNER_PREFERENCE, &m->Corner, sizeof(m->Corner));
+			return;
+		}
+		if (compare(sargs, L"SETCORNER"))
+		{
+			if (m->Accent == DWMFB_DISABLED && m->Mica == DWMSBT_NONE) return;
+
+			m->Corner = DWMWCP_DONOTROUND;
+			if (compare(sargs, L"ROUNDSMALL")) m->Corner = DWMWCP_ROUNDSMALL;
+			if (compare(sargs, L"ROUND")) m->Corner = DWMWCP_ROUND;
+			m->temp_Corner = m->Corner;
+
+			SetWindowAttribute(m->skin, DWMWA_WINDOW_CORNER_PREFERENCE, &m->Corner, sizeof m->Corner);
+			return;
+		}
+		// BorderVisible
+		if (compare(sargs, L"TOGGLEBORDERS"))
+		{
+			if (m->CBorder == DWMFCB_VISIBLE)
+				m->CBorder = DWMFCB_HIDDEN;
+			else
+				m->CBorder = DWMFCB_VISIBLE;
+			
+			SetWindowAttribute(m->skin, DWMWA_BORDER_COLOR, &m->CBorder, sizeof(m->CBorder));
+			return;
+		}
+		if (compare(sargs, L"ENABLEBORDERS"))
+		{
+			m->CBorder = DWMFCB_VISIBLE;
+			SetWindowAttribute(m->skin, DWMWA_BORDER_COLOR, &m->CBorder, sizeof(m->CBorder));
+			return;
+		}
+		if (compare(sargs, L"DISABLEBORDERS"))
+		{
+			m->CBorder = DWMFCB_HIDDEN;
+			SetWindowAttribute(m->skin, DWMWA_BORDER_COLOR, &m->CBorder, sizeof(m->CBorder));
+			return;
+		}
+		// Backdrop
+		if (compare(sargs, L"TOGGLEBACKDROP"))
+		{
+			if (m->Backdrop == DWMFB_DARK || m->Backdrop == DWMFB_LIGHT) m->Backdrop = m->Backdrop == DWMFB_DARK ? DWMFB_LIGHT : DWMFB_DARK;
+			if (m->Backdrop == DWMFB_DARK2 || m->Backdrop == DWMFB_LIGHT2) m->Backdrop = m->Backdrop == DWMFB_DARK2 ? DWMFB_LIGHT2 : DWMFB_DARK2;
+			if (m->Backdrop == DWMFB_DARK3 || m->Backdrop == DWMFB_LIGHT3) m->Backdrop = m->Backdrop == DWMFB_DARK3 ? DWMFB_LIGHT3 : DWMFB_DARK3;
+			if (m->Backdrop == DWMFB_DARK4 || m->Backdrop == DWMFB_LIGHT4) m->Backdrop = m->Backdrop == DWMFB_DARK4 ? DWMFB_LIGHT4 : DWMFB_DARK4;
+			if (m->Backdrop == DWMFB_DARK5 || m->Backdrop == DWMFB_LIGHT5) m->Backdrop = m->Backdrop == DWMFB_DARK5 ? DWMFB_LIGHT5 : DWMFB_DARK2;
+
+			SetSkinAccent(m->skin, m->DarkMode, m->Accent, m->Border, m->Backdrop);
+			return;
+		}
+		if (compare(sargs, L"LIGHTBACKDROP"))
+		{
+			if (m->Backdrop == DWMFB_DARK) m->Backdrop = DWMFB_LIGHT;
+			if (m->Backdrop == DWMFB_DARK2) m->Backdrop = DWMFB_LIGHT2;
+			if (m->Backdrop == DWMFB_DARK3) m->Backdrop = DWMFB_LIGHT3;
+			if (m->Backdrop == DWMFB_DARK4) m->Backdrop = DWMFB_LIGHT4;
+			if (m->Backdrop == DWMFB_DARK5) m->Backdrop = DWMFB_LIGHT5;
+
+			SetSkinAccent(m->skin, m->DarkMode, m->Accent, m->Border, m->Backdrop);
+			return;
+		}
+		if (compare(sargs, L"DARKBACKDROP"))
+		{
+			if (m->Backdrop == DWMFB_LIGHT) m->Backdrop = DWMFB_DARK;
+			if (m->Backdrop == DWMFB_LIGHT2) m->Backdrop = DWMFB_DARK2;
+			if (m->Backdrop == DWMFB_LIGHT3) m->Backdrop = DWMFB_DARK3;
+			if (m->Backdrop == DWMFB_LIGHT4) m->Backdrop = DWMFB_DARK4;
+			if (m->Backdrop == DWMFB_LIGHT5) m->Backdrop = DWMFB_DARK5;
+
+			SetSkinAccent(m->skin, m->DarkMode, m->Accent, m->Border, m->Backdrop);
+			return;
+		}
+		if (compare(sargs, L"SETBACKDROP"))
+		{
+			if (compare(sargs, L"LIGHT"))
+			{
+				if (compare(sargs, L"5")) m->Backdrop = DWMFB_LIGHT5;
+				if (compare(sargs, L"4")) m->Backdrop = DWMFB_LIGHT4;
+				if (compare(sargs, L"3")) m->Backdrop = DWMFB_LIGHT3;
+				if (compare(sargs, L"2")) m->Backdrop = DWMFB_LIGHT2;
+				if (compare(sargs, L"1")) m->Backdrop = DWMFB_LIGHT;
+			}
+			else if (compare(sargs, L"DARK"))
+			{
+				if (compare(sargs, L"5")) m->Backdrop = DWMFB_DARK5;
+				if (compare(sargs, L"4")) m->Backdrop = DWMFB_DARK4;
+				if (compare(sargs, L"3")) m->Backdrop = DWMFB_DARK3;
+				if (compare(sargs, L"2")) m->Backdrop = DWMFB_DARK2;
+				if (compare(sargs, L"1")) m->Backdrop = DWMFB_DARK;
+			}
+
+			SetSkinAccent(m->skin, m->DarkMode, m->Accent, m->Border, m->Backdrop);
+			return;
 		}
 	}
 
 	if (compare(sargs, L"TOGGLEBLUR"))
 	{
-		if (m->prevState == AccentState::BLURBEHIND)
+		if (m->Accent == DWMFB_DISABLED && m->Mica == DWMSBT_NONE)
 		{
-			m->prevState = AccentState::DISABLED;
-			m->nextState = AccentState::BLURBEHIND;
+			m->Accent = m->temp_Accent;
+			m->Mica = m->temp_Mica;
+			SetSkinAccent(m->skin, m->DarkMode, m->Accent, m->Border, m->Backdrop);
+			SetSkinMica(m->skin, m->Mica, m->MicaFocus);
+			SetSkinCornerAndBorder(m->skin, m->Corner, m->CBorder);
 		}
-		else if (m->prevState == AccentState::ACRYLIC)
+		else
 		{
-			m->prevState = AccentState::DISABLED;
-			m->nextState = AccentState::ACRYLIC;
+			m->temp_Accent = m->Accent;
+			m->temp_Mica = m->Mica;
+			m->Accent = DWMFB_DISABLED;
+			m->Mica = DWMSBT_NONE;
+			SetSkinAccent(m->skin, m->DarkMode, m->Accent, m->Border, m->Backdrop);
+			SetSkinMica(m->skin, m->Mica, m->MicaFocus);
+			SetSkinCornerAndBorder(m->skin, DWMWCP_DONOTROUND, m->CBorder);
 		}
-		else m->prevState = m->nextState;
-
-		failed = SetSkinAccent(m->skin, m->prevBorder, m->prevState, m->prevBackdrop);
-
-		if (IsWindowsBuildOrGreater(10, 0, 22000))
-		{
-			if (m->prevCorner == DWMWCP_ROUNDSMALL)
-			{
-				m->prevCorner = DWMWCP_DONOTROUND;
-				m->nextCorner = DWMWCP_ROUNDSMALL;
-			}
-			else if (m->prevCorner == DWMWCP_ROUND)
-			{
-				m->prevCorner = DWMWCP_DONOTROUND;
-				m->nextCorner = DWMWCP_ROUND;
-			}
-			else
-			{
-				if (m->prevState == AccentState::DISABLED) m->nextCorner = DWMWCP_DONOTROUND;
-				m->prevCorner = m->nextCorner;
-			}
-			SetWindowAttribute(m->skin, DWMWA_WINDOW_CORNER_PREFERENCE, &m->prevCorner, sizeof m->prevCorner);
-		}
+		return;
 	}
-	else if (compare(sargs, L"ENABLEBLUR"))
+	if (compare(sargs, L"ENABLEBLUR"))
 	{
-		if (m->prevState == AccentState::DISABLED)
+		if (m->Accent != DWMFB_DISABLED || m->Mica != DWMSBT_NONE) return;
+
+		m->Accent = m->temp_Accent;
+		m->Mica = m->temp_Mica;
+
+		SetSkinAccent(m->skin, m->DarkMode, m->Accent, m->Border, m->Backdrop);
+		SetSkinMica(m->skin, m->Mica, m->MicaFocus);
+		SetSkinCornerAndBorder(m->skin, m->Corner, m->CBorder);
+		return;
+	}
+	if (compare(sargs, L"DISABLEBLUR"))
+	{
+		if (m->Accent == DWMFB_DISABLED && m->Mica == DWMSBT_NONE) return;
+
+		m->temp_Accent = m->Accent;
+		m->temp_Mica = m->Mica;
+		m->Accent = DWMFB_DISABLED;
+		m->Mica = DWMSBT_NONE;
+
+		SetSkinAccent(m->skin, m->DarkMode, m->Accent, m->Border, m->Backdrop);
+		SetSkinMica(m->skin, m->Mica, m->MicaFocus);
+		SetSkinCornerAndBorder(m->skin, DWMWCP_DONOTROUND, m->CBorder);
+		return;
+	}
+	if (compare(sargs, L"SETBLUR"))
+	{		
+		if (m->Accent == DWMFB_DISABLED && m->Mica == DWMSBT_NONE) return;
+
+		m->Accent = DWMFB_BLURBEHIND;
+		m->Mica = DWMSBT_NONE;
+
+		if (compare(sargs, L"ACRYLIC"))
 		{
-			failed = SetSkinAccent(m->skin, m->prevBorder, m->nextState, m->prevBackdrop);
-			m->prevState = m->nextState;
-			if (IsWindowsBuildOrGreater(10, 0, 22000))
+			m->Accent = DWMFB_ACRYLIC;
+			m->Mica = DWMSBT_NONE;
+		}
+		if (compare(sargs, L"MICA"))
+		{
+			m->Accent = DWMFB_DISABLED;
+			m->Mica = DWMSBT_MAINWINDOW;
+			if (compare(sargs, L"ACRYLIC"))
 			{
-				m->prevCorner = m->nextCorner;
-				SetWindowAttribute(m->skin, DWMWA_WINDOW_CORNER_PREFERENCE, &m->prevCorner, sizeof m->prevCorner);
+				m->Accent = DWMFB_DISABLED;
+				m->Mica = DWMSBT_TRANSIENTWINDOW;
+			}
+			if (compare(sargs, L"ALT"))
+			{
+				m->Accent = DWMFB_DISABLED;
+				m->Mica = DWMSBT_TABBEDWINDOW;
 			}
 		}
-	}
-	else if (compare(sargs, L"DISABLEBLUR"))
-	{
-		if (m->prevState != AccentState::DISABLED)
-		{
-			if (m->prevState == AccentState::BLURBEHIND) m->nextState = AccentState::BLURBEHIND;
-			else if (m->prevState == AccentState::ACRYLIC) m->nextState = AccentState::ACRYLIC;
-			m->prevState = AccentState::DISABLED;
-			failed = SetSkinAccent(m->skin, m->prevBorder, m->prevState, m->prevBackdrop);
-			if (IsWindowsBuildOrGreater(10, 0, 22000))
-			{
-				if (m->prevCorner == DWMWCP_ROUNDSMALL) m->nextCorner = DWMWCP_ROUNDSMALL;
-				else if (m->prevCorner == DWMWCP_ROUND) m->nextCorner = DWMWCP_ROUND;
-				if (m->prevCorner == DWMWCP_DONOTROUND) m->nextCorner = DWMWCP_DONOTROUND;
-				m->prevCorner = DWMWCP_DONOTROUND;
 
-				SetWindowAttribute(m->skin, DWMWA_WINDOW_CORNER_PREFERENCE, &m->prevCorner, sizeof m->prevCorner);
-			}
-		}
-		
-	}
-	else if (compare(sargs, L"SETBLUR"))
-	{
-		if (m->prevState != AccentState::DISABLED){
-			if (compare(sargs, L"2")) m->prevState = AccentState::ACRYLIC;
-			else if (compare(sargs, L"1")) m->prevState = AccentState::BLURBEHIND;
-			else m->prevState = AccentState::BLURBEHIND;
-			failed = SetSkinAccent(m->skin, m->prevBorder, m->prevState, m->prevBackdrop);
-		}
-	}
+		m->temp_Accent = m->Accent;
+		m->temp_Mica = m->Mica;
 
-	if (!failed)
-	{
-		// Error
-		RmLog(LOG_ERROR, L"Could not load library user32.dll for some unknown reason.");
+		SetSkinAccent(m->skin, m->DarkMode, m->Accent, m->Border, m->Backdrop);
+		SetSkinMica(m->skin, m->Mica, m->MicaFocus);
+		return;
 	}
 }
 
 PLUGIN_EXPORT void Finalize(void* data)
 {
 	Measure* m = (Measure*)data;
-	// Disable the effect, the skin is unloaded
-	if (!SetSkinAccent(m->skin, 0, AccentState::DISABLED, AccentDrop::DARK))
+
+	if (!isValidWinVersion)
 	{
-		// Error
-		RmLog(LOG_ERROR, L"Could not load library user32.dll for some unknown reason.");
+		RmLog(LOG_WARNING, L"FrostedGlass plugin is supported only on Windows 10 and 11.");
+		return;
 	}
 
 	unloadModule();
