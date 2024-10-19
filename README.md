@@ -18,103 +18,82 @@ An example of the plugin in use:
 ```ini
 
 [FrostedGlass]
-Measure=Plugin
-Plugin=FrostedGlass
-BlurEnabled=1
-; Type = None | Blur | Acrylic | Mica | MicaAcrylic | MicaAlt
-; Mica, MicaAcrylic, MicaAlt only works for Windows 11.
-Type=Acrylic
-; Border = None | Top | Left | Right | Bottom | All
-; Borders are ignored if Mica is enabled.
-Border=Top | Left | Right | Bottom
-; DarkMode = 0 | 1 ; Only Wworks for Windows 11.
-; When using Mica it can does toggle between dark/light mode.
-; When using Round Corner it can does more shadow.
-DarkMode=1
-; Corner = None | Round | RoundSmall ; Only Wworks for Windows 11.
-; Using Corner disable Border option.
-Corner=Round
-; BorderVisible = 0 | 1 ; Only Wworks for Windows 11.
-; Only works if Corner is Round or Roundsmall.
-BorderVisible=1
-; Backdrop = Dark | Dark1... | Dark5 | Light | Light1... | Light5 ; Only Wworks for Windows 11.
-; Only works if Acrylic is enabled.
-Backdrop=Dark
-; MicaOnFocus = 0 | 1 ; Only Wworks for Windows 11.
-; If it's enabled, be sure of the skin can update and measure too.
-; Ex. [Rainmeter] Update=1000 and [FrostedGlass] UpdateDivider = 1.
-MicaOnFocus=0
-; NOTE: Command Measures are useless if the Measure has an update cycle.
-; so if you want use Command Measures, set the UpdateDivider to -1,
-DynamicVariables=1
-UpdateDivider=-1
+Measure = Plugin
+Plugin = FrostedGlass
+; ==========================
+; ==== NOTE: Plugin commands may will not work
+; ========== if you add "DynamicVariables=1"
+; ========== and if the skin has an update
+; ========== cycle, unless you add an
+; ========== "UpdateDivider=-1" to the measure.
+; ==========================
+; ==== Option: BlueEnabled
+; ==== Default Value: 1
+; ==== Total Values: 0 | 1
+; ==== Description: Disable (0) / Enable (1) blur.
+; ==== Recommendation: Use "Disabled" option to remove blur.
+BlueEnabled = 1
+; ==========================
+; ==== Option: DarkMode
+; ==== Default Value: 0
+; ==== Total Values: 0 | 1
+; ==== Description: Disable (0) / Enable (1) dark mode for Mica.
+; ================= Less (0) / More (1) Shadow for Round Corner.
+; ==== Compatibility: Corner(Round), Type(Mica|MicaAcrylic|MicaAlt) required.
+; ==== OS: Windows 11 Required.
+DarkMode = 1
+; ==========================
+; ==== Option: MicaOnFocus
+; ==== Default Value: 0
+; ==== Total Values: 0 | 1
+; ==== Description: (0) Mica effect always enabled.
+; ================= (1) Allows to use a solid color if the skin loses focus.
+; ==== Compatibility: Type(Mica|MicaAcrylic|MicaAlt) required.
+; ==== OS: Windows 11 Required.
+; ==== Recommendation: The skin must have an update cycle and the measure too.
+MicaOnFocus = 0
+; ==========================
+; ==== Option: Type
+; ==== Default Value: None
+; ==== Total Values: None | Blur | Acrylic | Mica | MicaAcrylic | MicaAlt
+; ==== Description: Apply a transparency effect to the skin.
+; ==== Compatibility: Mica effect requires Windows 11.
+Type = Acrylic
+; ==========================
+; ==== Option: Border
+; ==== Default Value: None
+; ==== Total Values: None | Top | Left | Right | Bottom | All
+; ==== Description: Apply a border effect to the skin.
+; ==== Compatibility: Not available if any Corner is enabled.
+; =================== Not available if Mica effect is enabled.
+Border = Top | Bottom
+; ==========================
+; ==== Option: Corner
+; ==== Default Value: None
+; ==== Total Values: None | Round | RoundSmall
+; ==== Description: Add round corners to the skin
+; ==== OS: Windows 11 Required.
+Corner = Round
+; ==========================
+; ==== Option: BorderVisible
+; ==== Default Value: 1
+; ==== Total Values: 0 | 1
+; ==== Description: Remove (0) / Add (1) border if any Corner is enabled. 
+; ==== Compatibility: Corner(Round|RoundSmall) required.
+; ==== OS: Windows 11 Required.
+BorderVisible = 1
+; ==========================
+; ==== Option: Backdrop
+; ==== Default Value: Dark
+; ==== Total Values: Dark | Dark2 | Dark3 | Dark4 | Dark5 | Light | Light2 | Light3 | Light4 | Light5
+; ==== Description: Add a tint to the acrylic effect.
+; ==== Compatibility: Type(Acrylic) required.
+; ==== OS: Windows 11 Required.
+Backdrop = Dark
+; ==========================
+UpdateDivider = 1
+
 ```
-
-## Type
-
-Valid options for `Type` are:
-- Win +10 Required > `None`, `Blur`. `Acrylic` 
-- Win 11 Required > `Mica`, `MicaAcrylic`, `MicaAlt`
-
-## DarkMode
-Valid options for `DarkMode` are:
-`0`, `1`
-
-## MicaOnFocus
-Valid options for `MicaOnFocus` are:
-`0`, `1`
-
-## Border
-
-Valid options for `Border` are:
-`Top`, `Left`, `Right`, `Bottom`, `All`, `None`
-
-## Corner
-
-Valid options for `Corner` are:
-`Round`, `RoundSmall`, `None`
-
-## BorderVisible
-
-Valid options for `BorderVisible` are:
-`0`, `1`
-
-## Backdrop
-
-Valid options for `Backdrop` are:
-
-<details>
-
-<summary>Dark - Dark5</summary>
-
-## Dark
- ![Rainmeter_gaYVD99tTR](https://github.com/user-attachments/assets/75772a61-1b90-4e85-a6c7-feb382194ac2)
-## Dark2
-![Rainmeter_QCI16Qv4PK](https://github.com/user-attachments/assets/aec6f2c1-5148-4d35-8918-126f58bdbe83)
-## Dark3
-![Rainmeter_wosNOmKq5m](https://github.com/user-attachments/assets/ab3d87fd-e331-457d-a5b4-8a7c7a573ecd)
-## Dark4
-![Rainmeter_etag4SvTR5](https://github.com/user-attachments/assets/e3937d3e-46b0-46c1-b7ca-d66de0cd2296)
-## Dark5
-![Rainmeter_LAisynEaux](https://github.com/user-attachments/assets/d07e7708-a4c1-46e7-b6b0-e5f735e44300)
-</details>
-<details>
-
-<summary>Light - Light5</summary>
-
-## Light
-![Rainmeter_4rZxfu0Uft](https://github.com/user-attachments/assets/38584a50-b7d4-473f-9004-9642ea80cda2)
-## Light2
-![Rainmeter_V88cVKPh80](https://github.com/user-attachments/assets/28c9ca23-b1b8-4386-88a9-9791b250e85f)
-## Light3
-![Rainmeter_PhyKG2Sdbn](https://github.com/user-attachments/assets/c5d88ef1-37eb-4551-8b6d-2156b869b6bd)
-## Light4
-![Rainmeter_37Rs3vAgmJ](https://github.com/user-attachments/assets/db2d7a31-b94e-44b4-9184-2fecb2f906cd)
-## Light5
-![Rainmeter_5Sjp7hn0Oh](https://github.com/user-attachments/assets/ffe6bd8c-02b6-4369-a307-4dc3b42fb11c)
-</details>
-
-<br>
 
 ## Commands
 
