@@ -12,8 +12,6 @@ constexpr DWORD BUILD_22H2 = 22621; // Windows 11 22H2 first to support mica pro
 
 constexpr uint32_t WCA_ACCENT_POLICY = 19;
 
-constexpr uint32_t DWMWA_MICA_EFFECT = 1029; // Windows 11 Mica
-
 // custom enumerations
 
 enum DWM_FROSTEDGLASS_BLUR : int32_t 
@@ -65,14 +63,14 @@ struct ACCENTPOLICY
 	DWM_FROSTEDGLASS_BLUR nAccentState = DWM_FROSTEDGLASS_BLUR::DWMFB_DISABLED;
 	DWM_FROSTEDGLASS_BORDER nFlags = DWM_FROSTEDGLASS_BORDER::DWMFB_NONE;
 	DWM_FROSTEDGLASS_BACKDROP nColor = DWM_FROSTEDGLASS_BACKDROP::DWMFB_DARK;
-	int32_t nAnimationId;
+	int32_t nAnimationId = NULL;
 };
 
 struct WINCOMPATTRDATA 
 {
-	uint32_t nAttribute = 0;
+	uint32_t nAttribute = NULL;
 	void* pData = nullptr;
-	uint32_t ulDataSize = 0;
+	uint32_t ulDataSize = NULL;
 };
 
 HINSTANCE hModule = NULL;
@@ -102,10 +100,10 @@ struct Measure
 	// Temp Values for ExecuteBang
 	DWM_FROSTEDGLASS_BLUR temp_Accent = DWMFB_DISABLED;
 	DWM_SYSTEMBACKDROP_TYPE temp_Mica = DWMSBT_NONE;
-	DWM_FROSTEDGLASS_BACKDROP temp_Backdrop = DWMFB_NOCOLOR;
-	DWM_FROSTEDGLASS_BORDER temp_Border = DWMFB_NONE;
+	//DWM_FROSTEDGLASS_BACKDROP temp_Backdrop = DWMFB_NOCOLOR; // UNUSED
+	//DWM_FROSTEDGLASS_BORDER temp_Border = DWMFB_NONE; // UNUSED
 	DWM_WINDOW_CORNER_PREFERENCE temp_Corner = DWMWCP_DONOTROUND;
-	DWM_FROSTEDGLASS_CBORDER temp_CBorder = DWMFCB_VISIBLE;
+	//DWM_FROSTEDGLASS_CBORDER temp_CBorder = DWMFCB_VISIBLE; // UNUSED
 };
 
 bool compare(std::wstring& in, const std::wstring& search);
@@ -113,17 +111,21 @@ bool IsAtLeastWin10Build(DWORD buildNumber);
 void loadModule();
 void unloadModule();
 
+void initPluginDefaultValues();
+
+void initRainmeterOptions(void* rm);
 void initDarkMode(void* rm);
 void initAccent(void* rm);
 void initMica(void* rm);
 void initBorder(void* rm);
 void initCornerAndBorder(void* rm);
 void initBackdrop(void* rm);
-void initBackwardsCompability(struct Measure* m, void* rm);
+void initBackwardsCompability(struct Measure* m);
 
-void SetSkinAccent(HWND hwnd, BOOL& skinDarkMode , const DWM_FROSTEDGLASS_BLUR& skinAccent, const DWM_FROSTEDGLASS_BORDER& skinBorder, const DWM_FROSTEDGLASS_BACKDROP& skinBackdrop);
+void SetSkinAccent(HWND hwnd, const DWM_FROSTEDGLASS_BLUR& skinAccent, const DWM_FROSTEDGLASS_BORDER& skinBorder, const DWM_FROSTEDGLASS_BACKDROP& skinBackdrop);
 void SetSkinCornerAndBorder(HWND hwnd, const DWM_WINDOW_CORNER_PREFERENCE& skinCorner, const DWM_FROSTEDGLASS_CBORDER& skinCBorder);
 void SetSkinMica(HWND hwnd, const DWM_SYSTEMBACKDROP_TYPE& skinMica, BOOL& skinMicaFocus);
+void SetSkinDarkMode(HWND hwnd, BOOL& skinDarkMode);
 
 void checkFeatures();
 void checkErrors();

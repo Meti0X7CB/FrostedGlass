@@ -11,8 +11,6 @@
 // STL
 #include <stdexcept>
 #include <string>
-#include <sstream>
-#include <vector>
 
 // Rainmeter API
 #include "../API/RainmeterAPI.h"
