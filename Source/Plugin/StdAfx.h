@@ -3,7 +3,7 @@
 #pragma comment(lib, "dwmapi.lib")
 
 // WinAPI
-#include <Windows.h>
+#include <windows.h>
 
 #include <dwmapi.h>
 #include <VersionHelpers.h>
