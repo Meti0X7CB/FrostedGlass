@@ -70,7 +70,7 @@ Border = Top | Bottom
 ; ==========================
 ; ==== Option: Corner
 ; ==== Default Value: None
-; ==== Total Values: None | Round | RoundSmall
+; ==== Total Values: None | Round | RoundWs | RoundSmall
 ; ==== Description: Add round corners to the skin
 ; ==== OS: Windows 11 Required.
 Corner = Round
@@ -85,11 +85,23 @@ BorderVisible = 1
 ; ==========================
 ; ==== Option: Backdrop
 ; ==== Default Value: Dark
-; ==== Total Values: Dark | Dark2 | Dark3 | Dark4 | Dark5 | Light | Light2 | Light3 | Light4 | Light5
+; ==== Total Values: Dark | Dark2 | Dark3 | Dark4 | Dark5 
+; ================== Light | Light2 | Light3 | Light4 | Light5
+; ================== DarkBase | LightBase
 ; ==== Description: Add a tint to the acrylic effect.
 ; ==== Compatibility: Type(Acrylic) required.
 ; ==== OS: Windows 11 Required.
-Backdrop = Dark
+Backdrop = LightBase
+; ==========================
+; ==== Option: Effect
+; ==== Default Value: None
+; ==== Total Values: None | Luminance
+; ==== Description: Increase the tint luminosity from the 
+; ================= <Backdrop> option.
+; ==== Compatibility: Type(Acrylic) required.
+; ==== OS: Windows 11 Required.
+; ==== Recommendation: Use with Backdrop(LightBase|DarkBase).
+Effect = Luminance
 ; ==========================
 UpdateDivider = 1
 
