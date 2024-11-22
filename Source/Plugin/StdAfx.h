@@ -3,7 +3,7 @@
 #pragma comment(lib, "dwmapi.lib")
 
 // WinAPI
-#include <Windows.h>
+#include <windows.h>
 
 #include <dwmapi.h>
 #include <VersionHelpers.h>
@@ -11,8 +11,6 @@
 // STL
 #include <stdexcept>
 #include <string>
-#include <sstream>
-#include <vector>
 
 // Rainmeter API
 #include "../API/RainmeterAPI.h"

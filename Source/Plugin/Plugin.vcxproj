@@ -152,7 +152,7 @@ xcopy /R /Y "$(OutputPath)$(TargetFileName)" "%appdata%/Rainmeter/Plugins/$(Targ
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>..\API\x64\Rainmeter.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>..\API\x64\Rainmeter.lib;dwmapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
       <ProfileGuidedDatabase>$(OutDir)$(TargetName).pgd</ProfileGuidedDatabase>
     </Link>

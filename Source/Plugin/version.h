@@ -1,4 +1,4 @@
-#define PLUGIN_VERSION "1.1.7"
+#define PLUGIN_VERSION "1.1.9"
 #define PLUGIN_AUTHOR "theAzack9, khanhas, Meti0X7CB, KazukiGames82"
 #define PLUGIN_YEAR 2018
 // Has to be the same as the project name!
